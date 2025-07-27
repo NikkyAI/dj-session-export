@@ -11,9 +11,9 @@ kotlin {
         binaries {
             executable() {
                 entryPoint = "main"
-                if(System.getenv("CI") == null) {
-                    baseName = "virtualdj-export-testbuild"
-                }
+//                if(System.getenv("CI") == null) {
+//                    baseName = "virtualdj-export-testbuild"
+//                }
                 runTaskProvider?.get()?.also { runTask ->
                     val args = providers.gradleProperty("runArgs")
                     runTask.workingDir = file("run").also { it.mkdirs() }

@@ -11,6 +11,7 @@ kotlin {
     mingwX64()
     sourceSets {
         commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:_")
 
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:_")

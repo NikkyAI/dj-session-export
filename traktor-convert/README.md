@@ -12,4 +12,4 @@ the tracklist will be exported as a `txt` file
 
 TODO: add screenshots to README
 
-## download [traktor-export-converter.exe](https://github.com/NikkyAI/setlist-export/releases/download/nightly/traktor-export-converter.exe)
+## download [traktor-convert.exe](https://github.com/NikkyAI/setlist-export/releases/download/nightly/traktor-convert.exe)

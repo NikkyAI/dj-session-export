@@ -15,6 +15,8 @@ rootProject.name = "setlist-export"
 
 include("shared")
 include("traktor-convert")
+include("serato-convert")
+include("serato-export")
 include("rekordbox-export")
 include("mixxx-export")
 include("virtualdj-export")

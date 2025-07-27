@@ -1,0 +1,7 @@
+*.txt
+*.csv
+*.html
+*.md
+/run/
+
+!README.md

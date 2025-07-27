@@ -20,27 +20,30 @@ allprojects {
 }
 
 tasks {
-    val subprojects = listOf(
-        project(":traktor-convert"),
-        project(":rekordbox-export"),
-        project(":mixxx-export"),
-        project(":virtualdj-export"),
-    )
     val packageZip by registering(Zip::class) {
         group = "package"
-        subprojects.forEach { subproject ->
-//            dependsOn(it.tasks["linkDebugExecutableMingwX64"])
-            from(subproject.tasks["linkReleaseExecutableMingwX64"])
-        }
+        subprojects
+            .forEach { subproject ->
+                subproject.tasks.firstOrNull {
+                    it.name == "linkReleaseExecutableMingwX64"
+                }?.let {
+                    from(it)
+                }
+            }
         archiveBaseName = "dist"
         destinationDirectory = project.layout.buildDirectory
     }
     val copyExecutables by registering(Copy::class) {
         group = "package"
-        subprojects.forEach { subproject ->
-//            dependsOn(it.tasks["linkDebugExecutableMingwX64"])
-            from(subproject.tasks["linkReleaseExecutableMingwX64"])
-        }
+
+        subprojects
+            .forEach { subproject ->
+                subproject.tasks.firstOrNull {
+                    it.name == "linkReleaseExecutableMingwX64"
+                }?.let {
+                    from(it)
+                }
+            }
         destinationDir = file(project.layout.buildDirectory)
     }
 }
