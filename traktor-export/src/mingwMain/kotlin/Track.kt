@@ -20,6 +20,6 @@ data class Track(
     val remixer: String?,
     val key: String?,
     val genre: String?,
-    val file: String,
+    val file: String?,
 ) {
 }

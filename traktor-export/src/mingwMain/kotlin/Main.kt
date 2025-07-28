@@ -81,7 +81,7 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
             remixer = collectionEntry.info?.remixer,
             key = collectionEntry.info?.key,
             genre = collectionEntry.info?.genre,
-            file = collectionEntry.location.file,
+            file = collectionEntry.location.file ?: collectionEntry.location.webadress,
         )
     }
 
@@ -171,7 +171,8 @@ fun main(vararg args: String) {
             println()
             e.printStackTrace()
             println()
-            emptyList()
+            //emptyList()
+            exitProcess(-1)
         }
     }.let {
 
