@@ -44,7 +44,7 @@ fun main(vararg args: String) {
 //        .let {
 //            println(it)
 //        }
-    val database = if(FileSystem.SYSTEM.exists(databaseXmlPath)) {
+    val database = if (FileSystem.SYSTEM.exists(databaseXmlPath)) {
         FileSystem.SYSTEM.source(databaseXmlPath).buffer().use {
             it.readUtf8()
         }
@@ -52,7 +52,7 @@ fun main(vararg args: String) {
                 println("decoding $databaseXmlPath")
                 xml.decodeFromString(VirtualDJDatabase.serializer(), it)
             }
-    }else {
+    } else {
         println("database file $databaseXmlPath not found, some information may not be accurate")
 
         VirtualDJDatabase(songs = emptyList())
@@ -121,7 +121,7 @@ fun main(vararg args: String) {
             }.distinct()
     }
 
-    if(cueFiles.isEmpty()) {
+    if (cueFiles.isEmpty()) {
         println("no cue file locations oassed or found in $databaseXmlPath ")
         exitProcess(1)
     }
@@ -131,7 +131,7 @@ fun main(vararg args: String) {
         parseCue(it)
     }
 
-    cues.forEach { cueFile ->
+    cues.flatMap { cueFile ->
         println()
         println("cue file: $cueFile")
         val recording = database.songs.firstOrNull() { it.filePath.endsWith(cueFile.file) }
@@ -148,6 +148,7 @@ fun main(vararg args: String) {
             }
         val tracklist = Tracklist(
             title = date?.toString() ?: cueFile.file,
+            exportPath = getExportFolder() / "VirtualDJ",
             tracks = cueFile.tracks.map { cueTrack ->
                 Track(
                     position = cueTrack.trackNum,
@@ -157,73 +158,28 @@ fun main(vararg args: String) {
                 )
             }
         )
-
-        Template.write(
-            tracklist,
-            Track.serializer(),
+        tracklist.splitTracklists(
+            { it.time },
+            { track, diff ->
+                track.copy(
+                    time = track.time - diff
+                )
+            },
         )
 
-//        cueFile.tracks.map { cueTrack ->
-//            val performer = cueTrack.performer
-//                .substringBefore(" feat. ")
-//            val feat = cueTrack.performer
-//                .substringAfter(" feat. ", missingDelimiterValue = "")
-//                .takeUnless { it.isEmpty() }
-//            val title = cueTrack.title.substringBefore("(Remix)")
-//            val remix = if(cueTrack.title.contains("(Remix)")) {
-//                "(Remix)"
-//            } else null
-//
-//            virtualDjDb.songs.firstOrNull {
-//                it.tags.author == cueTrack.performer &&
-//                        it.tags.title == cueTrack.title
-//            }
-//                ?: virtualDjDb.songs.firstOrNull {
-//                    it.tags.author == cueTrack.performer &&
-//                            it.tags.title + " (" + it.tags.remix + ")" == cueTrack.title
-//                }
-//                ?: virtualDjDb.songs.firstOrNull {
-//                    it.tags.author == performer &&
-//                            it.tags.title == "${cueTrack.title} (ft. $feat)"
-//                }
-////                ?: virtualDjDb.songs.firstOrNull {
-////                    val filename = it.filePath.substringAfterLast("\\").substringBeforeLast(".")
-////                    val expected = "${cueTrack.performer} - ${cueTrack.title}"
-////                    println("$expected == $filename")
-////                    filename == expected
-////                }
-//                ?: virtualDjDb.songs.firstOrNull {
-//                    val filename = it.filePath
-//                        .substringAfterLast("\\")
-//                        .substringBeforeLast(".")
-//                        .replace("""[\[\]()&]""".toRegex(), "")
-//                    val expected = listOfNotNull(
-//                        "$performer - ${cueTrack.title}",
-//                        "(ft. $feat)".takeIf { feat != null},
-//                        "$remix".takeIf { remix != null}
-//                    ).joinToString(" ")
-////                        .replace("&", "&amp;")
-//                            .replace("""[\[\]()&]""".toRegex(), "")
-//                    println("$expected == $filename")
-//                    filename == expected
-//                }
-//                ?: run {
-//                    println("performer: $performer")
-//                    println("feat: $feat")
-//                    println("title: $title")
-//                    println("remix: $remix")
-//                    error("could not find track for $cueTrack")
-//                }
-//        }
-
+    }.let {
+        Template.write(
+            it,
+            Track.serializer(),
+        )
     }
 
 
-    val tracklists = database.songs.filter {
+    database.songs.filter {
         it.comment?.startsWith("Recorded using VirtualDJ on ") ?: false
     }.filter {
         it.filePath.toPath().name !in cues.map { it.file }
-    }.map { recording ->
+    }.mapNotNull { recording ->
         val date = recording.comment!!.substringAfter("Recorded using VirtualDJ on ")
             .let {
                 LocalDate.parse(it, LocalDate.Formats.ISO)
@@ -274,33 +230,31 @@ fun main(vararg args: String) {
 //        }
         val tracklist = Tracklist(
             title = date.toString(),
+            exportPath = getExportFolder() / "VirtualDJ",
             tracks = tracks,
         )
-        if(tracklist.tracks.isNotEmpty()) {
-
+        if (tracklist.tracks.isNotEmpty()) {
+            tracklist.splitTracklists(
+                { it.time },
+                { track, diff ->
+                    track.copy(
+                        time = track.time - diff
+                    )
+                },
+            )
+        } else {
+            println("tracklist was empty")
+            null
+        }
+    }.flatten()
+        .let {
             Template.write(
-                tracklist,
+                it,
                 SimpleTrack.serializer(),
                 defaultTemplate = "{time} {title}",
                 templateKey = "template_simple"
             )
-        } else {
-            println("tracklist was empty")
         }
-    }
-
-//    println(Clock.System.now().format(sqliteDatetimeFormat))
-
-
-//    runBlocking {
-//        tracklistsNew.forEach { playlist ->
-//            Template.write(
-//                playlist,
-//                Track.serializer(),
-//            )
-//        }
-//    }
-
 
     println("")
     println("PRESS ANY BUTTON TO CLOSE")

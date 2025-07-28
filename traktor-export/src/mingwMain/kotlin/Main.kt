@@ -1,3 +1,4 @@
+import com.saveourtool.okio.safeToRealPath
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -18,23 +19,15 @@ val xmlLenient = XML {
     recommended {
         ignoreUnknownChildren()
         pedantic = false
-//            autoPolymorphic = true
     }
 }
-val xml = XML {
-    recommended {
-        pedantic = false
-//            autoPolymorphic = true
-    }
-}
-
-fun parseNml(nmlPath: Path) {
-//    val module = SerializersModule {
-//        polymorphic(History.Node::class, ) {
-//            subclass(History.Node.FolderNode::class, History.Node.FolderNode.serializer())
-//            subclass(History.Node.PlaylistNode::class, History.Node.PlaylistNode.serializer())
-//        }
+//val xml = XML {
+//    recommended {
+//        pedantic = false
 //    }
+//}
+
+fun parseNml(nmlPath: Path): Tracklist<Track>? {
 
     val history = FileSystem.SYSTEM.source(nmlPath).buffer().use {
         it.readUtf8()
@@ -42,8 +35,8 @@ fun parseNml(nmlPath: Path) {
         xmlLenient.decodeFromString(History.serializer(), it)
     }
 
-    println("collection: ${history.collection}")
-    println("playlists: ${history.playlists}")
+//    println("collection: ${history.collection}")
+//    println("playlists: ${history.playlists}")
 
     history.playlists.folderNode.name.let { require(it == $$"$ROOT") }
     history.playlists.folderNode.subnodes.let { require(it.count == 1) }
@@ -53,6 +46,7 @@ fun parseNml(nmlPath: Path) {
             .folderNode.subnodes
             .playlistNode.playlist.entries
             .filter { it.extendedData.playedPublic == 1 }
+            .filter { it.primaryKey.type == "TRACK" }
             .map { entry ->
                 val start = LocalDateTime(
                     // just guessing a offset here
@@ -67,21 +61,21 @@ fun parseNml(nmlPath: Path) {
     val referenceInstant = entries.firstOrNull()?.second ?: Clock.System.now()
 
     val tracks = entries.map { (entry, start) ->
-        val collectionEntry = history.collection.entry.first() {
+        val collectionEntry = history.collection.entry.firstOrNull {
             it.location.fullPath == entry.primaryKey.key
-        }
-//                println("epochdays: " +Clock.System.now().toLocalDateTime(TimeZone.UTC).date.toEpochDays())
+        } ?: error("failed to find track data for ${entry.primaryKey.key}")
 
-        println(start)
-        println(collectionEntry.title)
-        println(collectionEntry.artist)
+//        println(start)
+//        println(collectionEntry.title)
+//        println(collectionEntry.artist)
 
         Track(
             time = start - referenceInstant,
             duration = entry.extendedData.duration.seconds,
             endTime = (start - referenceInstant) + entry.extendedData.duration.seconds,
+//            playedAt = start.toLocalDateTime(TimeZone.currentSystemDefault()).toString(),
             title = collectionEntry.title,
-            artist = collectionEntry.artist,
+            artist = collectionEntry.artist?.deduplicate(),
             album = collectionEntry.album?.title,
             label = collectionEntry.info?.label,
             remixer = collectionEntry.info?.remixer,
@@ -91,28 +85,27 @@ fun parseNml(nmlPath: Path) {
         )
     }
 
-    val tracklist = Tracklist(
+    val traktorFolderName = nmlPath.parent?.takeIf { it.name == "History" }
+        ?.parent?.takeIf { it.name.startsWith("Traktor") }
+        ?.name
+
+    val tracklists = Tracklist(
         title = nmlPath.name.substringBeforeLast(".nml"),
+        exportPath = traktorFolderName?.let { getExportFolder() / it }
+//            ?: nmlPath.safeToRealPath().parent
+            ?: ".".toPath(),
         tracks = tracks
     )
 
-    Template.write(tracklist, Track.serializer())
+    return tracklists
+
 //    genreBreakdown(tracklist) { genre }
-
-//        .let {
-//            println("decoding XML")
-//            xmlLenient.decodeFromString(VirtualDJDatabase.serializer(), it)
-//        }
-//        .let {
-//            println(it)
-//        }
-
 
 }
 
 fun main(vararg args: String) {
     val documents = executeCommand("powershell.exe -Command [Environment]::GetFolderPath('MyDocuments')")
-    println(documents)
+//    println(documents)
 
     val nativeInstrumentsPath = documents.toPath() / "Native Instruments"
 
@@ -124,6 +117,10 @@ fun main(vararg args: String) {
             .flatMap { traktorPath ->
                 FileSystem.SYSTEM.list(traktorPath / "History")
             }
+            .map {
+                it.safeToRealPath()
+            }
+            .distinct()
     } else {
         val paths = args.map { it.toPath() }.filter {
             FileSystem.SYSTEM.exists(it)
@@ -143,50 +140,45 @@ fun main(vararg args: String) {
                     println()
                     emptyList()
                 }
-            }.distinct()
+            }
+            .map {
+                it.safeToRealPath()
+            }
+            .distinct()
     }
 
-
-    if(nmlFiles.isEmpty()) {
+    if (nmlFiles.isEmpty()) {
         println("no nml file locations passed or found in $nativeInstrumentsPath")
         exitProcess(1)
     }
-    
-    nmlFiles.forEach { nmlPath ->
-        println("processing $nmlPath")
-        parseNml(nmlPath)
+
+    nmlFiles.flatMap { nmlPath ->
+        try {
+            println("processing ${nmlPath.safeToRealPath()}")
+
+            parseNml(nmlPath.safeToRealPath())
+                ?.splitTracklists(
+                    { it.time },
+                    { track, diff ->
+                        track.copy(
+                            time = track.time - diff,
+                            endTime = (track.time - diff) + track.duration
+                        )
+                    }
+                )
+                .orEmpty()
+        } catch (e: Exception) {
+            println()
+            e.printStackTrace()
+            println()
+            emptyList()
+        }
+    }.let {
+
+        Template.write(it, Track.serializer())
     }
-    
-//    FileSystem.SYSTEM.list(documents.toPath() / "Native Instruments")
-//        .filter {
-//            it.name.startsWith("Traktor")
-//        }
-//        .flatMap { traktorPath ->
-//            FileSystem.SYSTEM.list(traktorPath / "History")
-//        }
-//        .forEach { traktorPath ->
-//            println("processing $traktorPath")
-//
-//            println("listing ${traktorPath / "History"}")
-//            FileSystem.SYSTEM.list(traktorPath / "History")
-//                .filter { it.name.endsWith(".nml") }
-//                .forEach { nmlPath ->
-//                    println("processing $nmlPath")
-//                    parseNml(nmlPath)
-//                }
-//        }
-
-
-//    val tracklist = parseHtmlFile(filePath.toPath())
-//
-//    if (tracklist != null) {
-////        createTracklist(parsedHtml)
-//        Template.write(tracklist, TrackData.serializer())
-//        genreBreakdown(tracklist) { genre }
-//    }
 
     println("")
     println("PRESS ANY BUTTON TO CLOSE")
     readlnOrNull()
 }
-

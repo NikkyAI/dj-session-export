@@ -1,5 +1,6 @@
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.select.Elements
+import com.saveourtool.okio.safeToRealPath
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
@@ -167,6 +168,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
 
         Tracklist(
             title = title,
+            exportPath = filePath.safeToRealPath().parent ?: ".".toPath(),
             tracks = tracks.sortedBy { it.timestamp }
         )
         //.sortedBy { it.trackNum }
@@ -328,7 +330,17 @@ fun main(vararg args: String) {
 
     if (tracklist != null) {
 //        createTracklist(parsedHtml)
-        Template.write(tracklist, TrackData.serializer())
+        Template.write(
+            tracklist.splitTracklists(
+                { it.time },
+                { track, diff ->
+                    track.copy(
+                        time = track.time - diff
+                    )
+                },
+            ),
+            TrackData.serializer()
+        )
         genreBreakdown(tracklist) { genre }
     }
 

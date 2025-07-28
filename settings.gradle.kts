@@ -11,7 +11,7 @@ plugins {
     id("de.fayard.refreshVersions") version "0.60.5"
 }
 
-rootProject.name = "setlist-export"
+rootProject.name = "dj-session-export"
 
 include("shared")
 include("traktor-convert")
@@ -21,7 +21,3 @@ include("serato-export")
 include("rekordbox-export")
 include("mixxx-export")
 include("virtualdj-export")
-
-//project(":traktor").name = "traktor-export-converter"
-//project(":rekordbox").name = "rekordbox-export"
-//project(":mixxx").name = "mixxx-export"

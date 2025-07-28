@@ -44,12 +44,13 @@ data class SeratoExportFLF(
 
 @Serializable
 data class SeratoTrack(
-    val time: String,
+    @Serializable(with=DurationSerializer::class)
+    val time: Duration,
     val title: String,
     @Serializable(with = InstantSerializer::class)
-    val startTime: Instant,
+    val startAt: Instant,
     @Serializable(with = InstantSerializer::class)
-    val endTime: Instant,
+    val endAt: Instant,
     @Serializable(with = DurationSerializer::class)
     val playTime: Duration,
     val deck: Int,

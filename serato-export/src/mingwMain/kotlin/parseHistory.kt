@@ -167,7 +167,7 @@ fun getSeratoHistory(seratoPath: Path = defaultSeratoPath): List<Session> {
 @OptIn(ExperimentalForeignApi::class)
 val defaultSeratoPath: Path
     get() {
-        val homepath = getenv("HOMEPATH")?.toKString() ?: error("failed to get %HOMEPATH%")
+        val homepath = getenv("USERPROFILE")?.toKString() ?: error("failed to get %USERPROFILE%")
         return homepath.toPath() / "Music/_Serato_/"
     }
 

@@ -1,8 +1,12 @@
+import kotlinx.datetime.UtcOffset
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
+import kotlin.time.Instant
 
 @Serializable
-class Track(
+data class Track(
+//    @Serializable(with = InstantSerializer::class)
+//    val playedAt: String,
     @Serializable(with = DurationSerializer::class)
     val time: Duration,
     @Serializable(with = DurationSerializer::class)

@@ -106,6 +106,7 @@ fun main(vararg args: String) {
                 }
                 Tracklist(
                     title = playlistName,
+                    exportPath = getExportFolder() / "Mixxx",
                     tracks = rows.map { songRow ->
                         val timestamp = songRow.get("start").asLong().let {
                             Instant.fromEpochSeconds(it)
@@ -132,12 +133,22 @@ fun main(vararg args: String) {
             }
         }.getOrThrow()
 
-        tracklists.forEach { tracklist ->
+        tracklists.flatMap { tracklist ->
+            genreBreakdown(tracklist) { genre }
+            tracklist.splitTracklists(
+                { it.time },
+                { track, diff ->
+                    track.copy(
+                        time = track.time - diff
+                    )
+                }
+            )
+        }.let {tracklists ->
             Template.write(
-                tracklist,
+                tracklists,
                 Song.serializer(),
             )
-            genreBreakdown(tracklist) { genre }
+//            genreBreakdown(tracklist) { genre }
         }
 
         println("")

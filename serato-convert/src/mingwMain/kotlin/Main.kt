@@ -1,5 +1,6 @@
 import app.softwork.serialization.csv.CSVFormat
 import app.softwork.serialization.flf.FixedLengthFormat
+import com.saveourtool.okio.safeToRealPath
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlin.time.Instant
@@ -38,18 +39,8 @@ val timeFormat = LocalTime.Format {
 
 val dateTimeFormat = LocalDateTime.Format {
     date(dateFormat)
-//    year()
-//    char('/')
-//    monthNumber(padding = Padding.NONE)
-//    char('/')
-//    day(padding = Padding.NONE)
     char(' ')
     time(timeFormat)
-//    hour()
-//    char(':')
-//    minute()
-//    char(':')
-//    second()
 }
 
 fun parseLocalDatetime(startTimeString: String): LocalDateTime {
@@ -150,10 +141,10 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
         val tracks = trackData.map { (it, startTime, endTime) ->
 
             SeratoTrack(
-                time = (startTime - referenceInstant).formatTimestamp(),
+                time = startTime - referenceInstant,
                 title = it.name,
-                startTime = startTime,
-                endTime = endTime,
+                startAt = startTime,
+                endAt = endTime,
                 playTime = it.playtime,
                 deck = it.deck.toInt(),
                 notes = it.notes,
@@ -164,7 +155,10 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
         Tracklist(
             title = exportStartTime.toString()
                 .replace(":", "-")
-                .replace("T", " ")+"."+filePath.name.substringAfterLast("."),
+                .replace("T", " ") + "." + filePath.name.substringAfterLast("."),
+
+            exportPath = filePath.safeToRealPath().parent ?: ".".toPath(),
+            //getExportFolder() / "serato-convert",
             tracks = tracks
         )
     } catch (error: Exception) {
@@ -202,7 +196,7 @@ fun main(vararg args: String) {
             listOf(readlnOrNull()?.trim() ?: return)
         }
     println("parsing $args")
-    args.forEach { filePath ->
+    val tracklists = args.flatMap { filePath ->
 
         println()
         println("parsing $filePath")
@@ -218,14 +212,21 @@ fun main(vararg args: String) {
         val tracklist = trackListFrom(filePath.toPath(), data)
 
 
-        if (tracklist != null) {
-            Template.write(
-                tracklist,
-                SeratoTrack.serializer(),
-                defaultTemplate = "{time} - {title}"
-            )
-        }
+        tracklist?.splitTracklists(
+            { it.time },
+            { track, diff ->
+                track.copy(
+                    time = track.time - diff
+                )
+            }
+        )
+            ?: emptyList()
     }
+    Template.write(
+        tracklists,
+        SeratoTrack.serializer(),
+        defaultTemplate = "{time} - {title}"
+    )
     println("")
     println("PRESS ANY BUTTON TO CLOSE")
     readlnOrNull()

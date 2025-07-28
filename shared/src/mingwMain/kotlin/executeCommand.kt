@@ -17,10 +17,10 @@ import kotlinx.cinterop.*
 import platform.posix.*
 
 @OptIn(ExperimentalForeignApi::class)
-fun executeCommand(
+actual fun executeCommand(
     command: String,
-    trim: Boolean = true,
-    redirectStderr: Boolean = true
+    trim: Boolean,
+    redirectStderr: Boolean
 ): String = memScoped {
     println("executing: $command")
 

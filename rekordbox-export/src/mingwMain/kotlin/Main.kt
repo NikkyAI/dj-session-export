@@ -169,10 +169,11 @@ fun main(vararg args: String) {
                     it.get("HistoryName").asString()
                 }.map { (historyName, rows) ->
                     val referenceTimestamp = rows.first().get("start").asLong().let {
-                    Instant.fromEpochSeconds(it)
-                }
+                        Instant.fromEpochSeconds(it)
+                    }
                     Tracklist(
                         title = historyName,
+                        exportPath = getExportFolder() / "Rekordbox",
                         tracks = rows.map { row ->
                             val timestamp = row.get("start").asLong().let {
                                 Instant.fromEpochSeconds(it)
@@ -196,12 +197,21 @@ fun main(vararg args: String) {
                 }
             }.getOrThrow()
 
-        tracklists.forEach { tracklist ->
+        tracklists.flatMap { tracklist ->
+            genreBreakdown(tracklist) { genre }
+            tracklist.splitTracklists(
+                { it.time },
+                { track, diff ->
+                    track.copy(
+                        time = track.time - diff
+                    )
+                },
+            )
+        }.let { tracklists ->
             Template.write(
-                tracklist,
+                tracklists,
                 Song.serializer(),
             )
-            genreBreakdown(tracklist) { genre }
         }
 
         println("")

@@ -1,11 +1,12 @@
+import com.saveourtool.okio.safeToRealPath
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import okio.FileSystem
+import okio.Path
 import okio.Path.Companion.toPath
-import kotlin.math.max
 
 //@Serializable
 //abstract class CommonSong(
@@ -15,20 +16,33 @@ import kotlin.math.max
 //    val timestamp: Instant,
 //    val title: String,
 //    val artist: String,
-//
 //)
+
+val hasOpened = mutableListOf<Path>()
+fun openFolder(path: Path) {
+    val realPath = path.safeToRealPath()
+    if (realPath !in hasOpened) {
+        try {
+            executeCommand("explorer.exe $path", trim = false, redirectStderr = false)
+        } catch (e: Exception) {
+            println(e.message)
+        }
+        hasOpened += realPath
+    }
+}
 
 object Template {
     val default = """
         {time} {artist} - {title}
     """.trimIndent().trim()
+
     fun load(
         defaultTemplate: String = default,
         templateKey: String = "template",
     ): (JsonObject) -> String {
         val templatePath = "$templateKey.txt".toPath()
         val exists = FileSystem.SYSTEM.exists(templatePath)
-        val templateString = if(exists) {
+        val templateString = if (exists) {
             FileSystem.SYSTEM.read(templatePath) {
                 readUtf8()
             }.trim()
@@ -49,35 +63,46 @@ object Template {
     }
 
     fun <E> write(
-        basename: String,
-        songs: List<E>,
+        tracklist: Tracklist<E>,
         serializer: KSerializer<E>,
         defaultTemplate: String = default,
         templateKey: String = "template",
     ) {
-        val formatter = load(defaultTemplate, templateKey)
-
-        val jsonString = json.encodeToString(ListSerializer(serializer), songs)
-        println(jsonString)
-
+        if (tracklist.tracks.isEmpty()) {
+            println("tracklist ${tracklist.title} was empty")
+            return
+        }
+        println("writing ${tracklist.title}")
+        if (!FileSystem.SYSTEM.exists(tracklist.exportPath.safeToRealPath())) {
+            println("creating ${tracklist.exportPath}")
+            FileSystem.SYSTEM.createDirectories(
+                tracklist.exportPath.safeToRealPath()
+            )
+        }
+        tracklist.tracks.forEach {
+            println(it)
+        }
+        val formatter = load(
+            defaultTemplate = defaultTemplate,
+            templateKey = templateKey
+        )
+        val jsonString = json.encodeToString(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
+        //        println(jsonString)
         val encodedSongs = json.decodeFromString(
             ListSerializer(JsonObject.serializer()),
             jsonString
         )
-//        val encodedSongs = .json.encodeToJsonElement(ListSerializer(serializer), songs)
+        //        val encodedSongs = .json.encodeToJsonElement(ListSerializer(serializer), songs)
 //            .jsonArray
-
         val txt = encodedSongs
             .joinToString("\n") {
                 formatter(it)
             }
-
-        val txtPath = "${basename}.txt".toPath()
+        val txtPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.txt"
         println("writing to $txtPath")
         FileSystem.SYSTEM.write(txtPath) {
             writeUtf8(txt)
         }
-
 //        val debugPath = ".out".toPath()
 //        FileSystem.SYSTEM.createDirectories(debugPath)
 //        val jsonPath = debugPath / ("${basename}.json").toPath()
@@ -85,7 +110,6 @@ object Template {
 //        FileSystem.SYSTEM.write(jsonPath) {
 //            writeUtf8(jsonString)
 //        }
-
         val keys = encodedSongs.first().keys
         val values = encodedSongs.map {
             it.entries.associate {
@@ -116,41 +140,53 @@ object Template {
 
         val CSV_SEPARATOR = ","
         val csv = keys.joinToString(CSV_SEPARATOR, postfix = "\n") {
-            if(it.contains(CSV_SEPARATOR)) {
+            if (it.contains(CSV_SEPARATOR)) {
                 '"' + it + '"'
             } else it
-        } + values.joinToString("\n") {obj ->
+        } + values.joinToString("\n") { obj ->
             obj.entries.joinToString(CSV_SEPARATOR) { (key, value) ->
                 (value.orEmpty()).let {
-                    if(it.contains(CSV_SEPARATOR)) {
+                    if (it.contains(CSV_SEPARATOR)) {
                         '"' + it + '"'
                     } else it
                 }
             }
         }
-        val csvPath = "${basename}.csv".toPath()
+        val csvPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.csv"
         println("writing to $csvPath")
         FileSystem.SYSTEM.write(csvPath) {
             writeUtf8(csv)
         }
-
         println("\n")
-
     }
 
+
     fun <E> write(
-        playlist: Tracklist<E>,
+        tracklists: List<Tracklist<E>>,
         serializer: KSerializer<E>,
         defaultTemplate: String = default,
         templateKey: String = "template",
     ) {
-        write(
-            basename = playlist.title,
-            songs = playlist.tracks,
-            serializer = serializer,
-            defaultTemplate = defaultTemplate,
-            templateKey = templateKey,
-        )
+        tracklists.forEach { trackList ->
+            write(
+                tracklist = trackList,
+                serializer = serializer,
+                defaultTemplate = defaultTemplate,
+                templateKey = templateKey
+            )
+        }
+        tracklists
+            .map { it.exportPath }
+            .distinct()
+            .forEach {
+                println("open $it ?")
+                println("hit Y + ENTER or y + ENTER to open the folder")
+
+                val line = readlnOrNull()
+                if (line?.lowercase()?.trim()?.startsWith("y") ?: true) {
+                    openFolder(it)
+                }
+            }
     }
 }
 

@@ -20,6 +20,8 @@ kotlin {
 
             implementation("org.jetbrains.kotlinx:kotlinx-io-core:_")
             implementation("org.jetbrains.kotlinx:kotlinx-io-okio:_")
+
+            implementation("com.saveourtool.okio-extras:okio-extras:_")
         }
     }
 }
