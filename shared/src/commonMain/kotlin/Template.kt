@@ -43,7 +43,7 @@ object Template {
 
         return { song: JsonObject ->
             song.entries.fold(templateString) { t, (key, value) ->
-                t.replace("{$key}", value.jsonPrimitive.contentOrNull.orEmpty())
+                t.replace("{$key}", value.jsonPrimitive.contentOrNull ?: "???")
             }
         }
     }
@@ -78,41 +78,60 @@ object Template {
             writeUtf8(txt)
         }
 
-        val debugPath = ".out".toPath()
-        FileSystem.SYSTEM.createDirectories(debugPath)
-        val jsonPath = debugPath / ("${basename}.json").toPath()
-        println("writing to $jsonPath")
-        FileSystem.SYSTEM.write(jsonPath) {
-            writeUtf8(jsonString)
-        }
-
+//        val debugPath = ".out".toPath()
+//        FileSystem.SYSTEM.createDirectories(debugPath)
+//        val jsonPath = debugPath / ("${basename}.json").toPath()
+//        println("writing to $jsonPath")
+//        FileSystem.SYSTEM.write(jsonPath) {
+//            writeUtf8(jsonString)
+//        }
 
         val keys = encodedSongs.first().keys
         val values = encodedSongs.map {
             it.entries.associate {
-                it.key to it.value.jsonPrimitive.contentOrNull.orEmpty()
+                it.key to it.value.jsonPrimitive.contentOrNull
             }
         }
-        val widths = keys.associateWith { key ->
-            max(
-                key.length,
-            values.maxOf { it[key]?.length ?: 0 }
-            )
-        }
+//        val widths = keys.associateWith { key ->
+//            max(
+//                key.length,
+//            values.maxOf { it[key]?.length ?: 0 }
+//            )
+//        }
 
-        val md =
-            keys.joinToString(" | ", "| ", " | \n") { it.padEnd(widths[it] ?: 0) } +
-            keys.joinToString("-|-", "|-", "-| \n") { "-".repeat(widths[it] ?: 0) } +
-            values.joinToString("\n") { obj ->
-                obj.entries.joinToString(" | ","| ", " |") { (key, value) ->
-                    value.padEnd(widths[key] ?: 0)
+//        val md =
+//            keys.joinToString(" | ", "| ", " | \n") { it.padEnd(widths[it] ?: 0) } +
+//            keys.joinToString("-|-", "|-", "-| \n") { "-".repeat(widths[it] ?: 0) } +
+//            values.joinToString("\n") { obj ->
+//                obj.entries.joinToString(" | ","| ", " |") { (key, value) ->
+//                    value.orEmpty().padEnd(widths[key] ?: 0)
+//                }
+//            }
+//
+//        val mdPath = "${basename}.md".toPath()
+//        println("writing to $mdPath")
+//        FileSystem.SYSTEM.write(mdPath) {
+//            writeUtf8(md)
+//        }
+
+        val CSV_SEPARATOR = ","
+        val csv = keys.joinToString(CSV_SEPARATOR, postfix = "\n") {
+            if(it.contains(CSV_SEPARATOR)) {
+                '"' + it + '"'
+            } else it
+        } + values.joinToString("\n") {obj ->
+            obj.entries.joinToString(CSV_SEPARATOR) { (key, value) ->
+                (value.orEmpty()).let {
+                    if(it.contains(CSV_SEPARATOR)) {
+                        '"' + it + '"'
+                    } else it
                 }
             }
-
-        val mdPath = "${basename}.md".toPath()
-        println("writing to $mdPath")
-        FileSystem.SYSTEM.write(mdPath) {
-            writeUtf8(md)
+        }
+        val csvPath = "${basename}.csv".toPath()
+        println("writing to $csvPath")
+        FileSystem.SYSTEM.write(csvPath) {
+            writeUtf8(csv)
         }
 
         println("\n")

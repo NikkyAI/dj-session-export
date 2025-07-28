@@ -29,7 +29,7 @@ fun main(vararg args: String) {
             pedantic = false
         }
     }
-    val xML = XML {
+    val xml = XML {
         recommended {
             pedantic = false
         }
@@ -50,7 +50,7 @@ fun main(vararg args: String) {
         }
             .let {
                 println("decoding $databaseXmlPath")
-                xML.decodeFromString(VirtualDJDatabase.serializer(), it)
+                xml.decodeFromString(VirtualDJDatabase.serializer(), it)
             }
     }else {
         println("database file $databaseXmlPath not found, some information may not be accurate")
