@@ -1,4 +1,4 @@
-# Serato setlist converter
+# Serato History exporter
 
 ## how to use
 

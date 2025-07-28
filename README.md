@@ -1,6 +1,6 @@
-# setlist-export
+# DJ session export
 
-Utilities to create plaintext exports of Dj sets
+Utilities to create plaintext exports of DJ sets
 
 Simple templating for txt exports
 
@@ -10,9 +10,13 @@ Markdown table formatted export
 
 Converter for Traktor HTML session export
 
-## [serato](./serato-convert/README.md)
+## [serato convert](./serato-convert/README.md)
 
 Converter for Serato session export
+
+## [serato export](./serato-export/README.md)
+
+Exporter for Serato History
 
 ## [rekordbox](./rekordbox-export/README.md)
 
