@@ -8,8 +8,6 @@ import nl.adaptivity.xmlutil.serialization.XML
 import okio.FileNotFoundException
 import okio.Path
 import okio.FileSystem
-import okio.buffer
-import okio.use
 import okio.Path.Companion.toPath
 import kotlin.system.exitProcess
 import kotlin.time.Clock
@@ -73,7 +71,7 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
             time = start - referenceInstant,
             duration = entry.extendedData.duration.seconds,
             endTime = (start - referenceInstant) + entry.extendedData.duration.seconds,
-//            playedAt = start.toLocalDateTime(TimeZone.currentSystemDefault()).toString(),
+            playedAt = start,
             title = collectionEntry.title,
             artist = collectionEntry.artist?.deduplicate(),
             album = collectionEntry.album?.title,
@@ -88,6 +86,7 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
     val traktorFolderName = nmlPath.parent?.takeIf { it.name == "History" }
         ?.parent?.takeIf { it.name.startsWith("Traktor") }
         ?.name
+        ?.replace(" ", "_")
 
     val tracklists = Tracklist(
         title = nmlPath.name.substringBeforeLast(".nml"),
@@ -104,6 +103,14 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
 }
 
 fun main(vararg args: String) {
+    val epochDays = LocalDate(2024,11,13).toEpochDays()
+    println(Int.MAX_VALUE)
+    println(epochDays)
+    println(epochDays-132647699)
+    val date = LocalDate.fromEpochDays(epochDays-132647699)
+    println(date)
+//    exitProcess(0)
+
     val documents = executeCommandAndCaptureOutput(
         listOf(
             "powershell.exe",
@@ -111,7 +118,6 @@ fun main(vararg args: String) {
             "[Environment]::GetFolderPath('MyDocuments')"
         )
     )
-    println(documents)
 
     val nativeInstrumentsPath = documents.toPath() / "Native Instruments"
 
