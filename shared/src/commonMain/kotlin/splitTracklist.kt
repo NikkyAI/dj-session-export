@@ -3,7 +3,8 @@ import kotlin.time.Duration.Companion.minutes
 
 fun <E : Any> Tracklist<E>.splitTracklists(
     timestampSelector: (E) -> Duration,
-    subtractTime: (E, Duration) -> E
+    subtractTime: (E, Duration) -> E,
+    calculateGap: (E, E) -> Duration = { a, b -> timestampSelector(b) - timestampSelector(a) }
 ): List<Tracklist<E>> {
     val tracklists = mutableListOf(this)
 
@@ -19,7 +20,7 @@ fun <E : Any> Tracklist<E>.splitTracklists(
                                 val trackStart = timestampSelector(track)
                                 val nextStart = timestampSelector(nextTrack)
 
-                                (nextStart - trackStart <= 15.minutes)
+                                calculateGap(track, nextTrack) <= 15.minutes
                             }.map { it.second })
 //                    .map {
 //                        subtractTime(it, start)
@@ -39,7 +40,7 @@ fun <E : Any> Tracklist<E>.splitTracklists(
                     val trackStart = timestampSelector(track)
                     val nextStart = timestampSelector(nextTrack)
 
-                    (nextStart - trackStart <= 15.minutes)
+                    calculateGap(track, nextTrack) <= 15.minutes
                 }.map { it.second })
                 .map {
                     subtractTime(it, start)

@@ -1,0 +1,155 @@
+import com.fleeksoft.ksoup.Ksoup
+import com.fleeksoft.ksoup.select.Elements
+import com.saveourtool.okio.safeToRealPath
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.format.Padding
+import kotlinx.datetime.format.char
+import okio.FileSystem
+import okio.Path
+import okio.Path.Companion.toPath
+import okio.buffer
+import okio.use
+import kotlin.time.Duration.Companion.seconds
+
+val durationFormat = LocalTime.Companion.Format {
+//    optional {
+    hour(padding = Padding.NONE)
+    char('h')
+//    }
+    minute(padding = Padding.ZERO)
+    char(':')
+    second(padding = Padding.ZERO)
+}
+
+fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
+    return try {
+        val data = FileSystem.Companion.SYSTEM.read(filePath) {
+            readUtf8()
+        }
+
+        val document = Ksoup.parse(data)
+        val h1 = document.selectFirst("h1")
+        if (h1 == null) {
+            println("Title (h1) not found")
+            return null
+        }
+        val title = h1.text().trim().substringAfter("Track List: ")
+        val table = document.selectFirst("table.border")
+        if (table == null) {
+            println("Table not found")
+            return null
+        }
+
+        val tracks = mutableListOf<TrackData>()
+        val rows = table.select("tr")
+
+        val headerCells = rows[0].select("th").map { it.text() }
+
+        val missingFields = mutableSetOf<String>()
+        val missingOptionalFields = mutableSetOf<String>()
+        fun findField(fieldName: String): Elements.() -> String {
+            val index = headerCells.indexOf(fieldName) // .takeUnless { it < 0 }
+
+            if (index < 0) {
+                missingFields += fieldName
+//                    println("missing field $fieldName")
+//                        error("missing field '$fieldName' \navailable fields: $headerCells")
+
+            }
+
+            return {
+                this[index].text().trim()
+            }
+        }
+
+        fun findFieldOptional(fieldName: String): Elements.() -> String? {
+            val index = headerCells.indexOf(fieldName) // .takeUnless { it < 0 }
+
+            if (index < 0) {
+                missingOptionalFields += fieldName
+                return { null }
+//                    println("missing field $fieldName")
+//                        error("missing field '$fieldName' \navailable fields: $headerCells")
+
+            }
+
+            return {
+                this[index].text().trim()
+            }
+        }
+
+        val trackNumField = findFieldOptional("Num.")
+        val titleField = findField("Title")
+        val artistField = findField("Artist")
+        val genreField = findFieldOptional("Genre")
+        val startTimeField = findField("Start Time")
+        val durationField = findField("Duration")
+        val deckField = findFieldOptional("Deck")
+        val keyField = findFieldOptional("Key")
+
+
+        if (missingOptionalFields.isNotEmpty()) {
+            println("Missing optional fields:")
+            println(missingOptionalFields.joinToString { "'$it'" })
+        }
+        if (missingFields.isNotEmpty()) {
+            println("Missing required fields:")
+            println(missingFields.joinToString { "'$it'" })
+        }
+        if (missingFields.isNotEmpty() || missingOptionalFields.isNotEmpty()) {
+            println("Available Fields:")
+            println(headerCells.joinToString { "'$it'" })
+
+        }
+
+        if (missingFields.isNotEmpty()) {
+            return null
+        }
+
+        val firstRow = rows[1].select("td")
+        val referenceTimestamp = parseInstant(firstRow.startTimeField())
+        for (i in 1 until rows.size) { // Skip the first row (header row)
+            val cells = rows[i].select("td")
+//            println("parsing row: $cells")
+            if (cells.size >= 10) {
+                val timestamp = parseInstant(cells.startTimeField())
+                tracks.add(
+                    TrackData(
+                        position = cells.trackNumField()?.toInt() ?: i,
+                        time = timestamp - referenceTimestamp,
+                        title = cells.titleField(),
+                        artist = cells.artistField(),
+                        genre = cells.genreField(),
+                        playedAt = timestamp,
+                        duration = run {
+                            val duration = cells.durationField()
+
+                            println("parsing duration: $duration")
+
+                            val localTime = LocalTime.Companion.parse("0h" + duration, durationFormat)
+//                            val localTime = LocalTime.parse(duration, durationFormat)
+                            localTime.toSecondOfDay().seconds
+                        },
+                        deck = cells.deckField(),
+                        key = cells.keyField()
+                    )
+//                        .also {
+//                            println(it)
+//                        }
+                )
+            }
+        }
+
+        Tracklist(
+            title = title,
+            exportPath = filePath.safeToRealPath().parent ?: ".".toPath(),
+            tracks = tracks.sortedBy { it.playedAt }
+        )
+        //.sortedBy { it.trackNum }
+
+    } catch (error: Exception) {
+        println("Error reading file: \n$error")
+//        error.printStackTrace()
+        null
+    }
+}

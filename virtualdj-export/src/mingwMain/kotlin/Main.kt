@@ -45,8 +45,8 @@ fun main(vararg args: String) {
 //            println(it)
 //        }
     val database = if (FileSystem.SYSTEM.exists(databaseXmlPath)) {
-        FileSystem.SYSTEM.source(databaseXmlPath).buffer().use {
-            it.readUtf8()
+        FileSystem.SYSTEM.read(databaseXmlPath) {
+            readUtf8()
         }
             .let {
                 println("decoding $databaseXmlPath")
@@ -165,7 +165,7 @@ fun main(vararg args: String) {
                     time = track.time - diff
                 )
             },
-        )
+        ) { a, b -> b.time - a.time }
 
     }.let {
         Template.write(
@@ -241,7 +241,7 @@ fun main(vararg args: String) {
                         time = track.time - diff
                     )
                 },
-            )
+            ) { a, b -> b.time - a.time }
         } else {
             println("tracklist was empty")
             null

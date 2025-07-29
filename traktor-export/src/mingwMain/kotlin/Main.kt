@@ -29,8 +29,8 @@ val xmlLenient = XML {
 
 fun parseNml(nmlPath: Path): Tracklist<Track>? {
 
-    val history = FileSystem.SYSTEM.source(nmlPath).buffer().use {
-        it.readUtf8()
+    val history = FileSystem.SYSTEM.read(nmlPath) {
+        readUtf8()
     }.let {
         xmlLenient.decodeFromString(History.serializer(), it)
     }
@@ -81,7 +81,7 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
             remixer = collectionEntry.info?.remixer,
             key = collectionEntry.info?.key,
             genre = collectionEntry.info?.genre,
-            file = collectionEntry.location.file ?: collectionEntry.location.webadress,
+            file = collectionEntry.location.file ?: collectionEntry.location.webAddress,
         )
     }
 
@@ -104,12 +104,20 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
 }
 
 fun main(vararg args: String) {
-    val documents = executeCommand("powershell.exe -Command [Environment]::GetFolderPath('MyDocuments')")
-//    println(documents)
+    val documents = executeCommandAndCaptureOutput(
+        listOf(
+            "powershell.exe",
+            "-Command",
+            "[Environment]::GetFolderPath('MyDocuments')"
+        )
+    )
+    println(documents)
 
     val nativeInstrumentsPath = documents.toPath() / "Native Instruments"
 
     val nmlFiles = if (args.isEmpty()) {
+        println("searching in $nativeInstrumentsPath")
+
         FileSystem.SYSTEM.list(nativeInstrumentsPath)
             .filter {
                 it.name.startsWith("Traktor")
@@ -165,7 +173,7 @@ fun main(vararg args: String) {
                             endTime = (track.time - diff) + track.duration
                         )
                     }
-                )
+                ) { lastTrack, nextTrack -> nextTrack.endTime - lastTrack.time }
                 .orEmpty()
         } catch (e: Exception) {
             println()

@@ -8,7 +8,9 @@ kotlin {
         binaries {
             executable() {
                 entryPoint = "main"
-//                baseName = "traktor-history-converter"
+                if(System.getenv("CI") == null) {
+                    baseName = project.name + "-dev"
+                }
                 runTaskProvider?.get()?.also { runTask ->
                     val args = providers.gradleProperty("runArgs")
                     runTask.workingDir = file("run").also { it.mkdirs() }
@@ -24,9 +26,6 @@ kotlin {
             implementation(project(":shared"))
             implementation("app.softwork:kotlinx-serialization-csv:_")
             implementation("app.softwork:kotlinx-serialization-flf:_")
-//            implementation("org.jetbrains.kotlinx:kotlinx-datetime:_")
-//            implementation("com.fleeksoft.ksoup:ksoup:_")
-//            implementation("com.squareup.okio:okio:_")
         }
         mingwMain.dependencies {
         }

@@ -1,34 +1,48 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
+import app.softwork.serialization.csv.CSVFormat
 import com.saveourtool.okio.safeToRealPath
+import com.saveourtool.okio.toFileUri
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 
-//@Serializable
-//abstract class CommonSong(
-//    @Serializable(with=DurationSerializer::class)
-//    val time: Duration,
-//    @Serializable(with=InstantSerializer::class)
-//    val timestamp: Instant,
-//    val title: String,
-//    val artist: String,
-//)
-
-val hasOpened = mutableListOf<Path>()
+//val hasOpened = mutableListOf<Path>()
 fun openFolder(path: Path) {
-    val realPath = path.safeToRealPath()
-    if (realPath !in hasOpened) {
-        try {
-            executeCommand("explorer.exe $path", trim = false, redirectStderr = false)
-        } catch (e: Exception) {
-            println(e.message)
-        }
-        hasOpened += realPath
+    println("opening $path")
+    try {
+//        Command("powershell.exe")
+//            .args(
+//                "-Command",
+//                "Invoke-Item",
+//                "\"$path\"",
+//            )
+//            .stdout(Stdio.Inherit)
+//            .spawn()
+        executeCommandAndCaptureOutput(
+            listOf(
+                "powershell.exe",
+                "-Command",
+                "Invoke-Item",
+                path.toString()
+            )
+        )
+//            executeCommand("start \"\" \"$path\"", trim = false, redirectStderr = false)
+//            executeCommand("start \"\" \"$path\"", trim = false, redirectStderr = false)
+    } catch (e: Exception) {
+        println(e.message)
     }
+//        hasOpened += realPath
+//    }
 }
 
 object Template {
@@ -37,22 +51,21 @@ object Template {
     """.trimIndent().trim()
 
     fun load(
+        dir: Path,
         defaultTemplate: String = default,
         templateKey: String = "template",
     ): (JsonObject) -> String {
-        val templatePath = "$templateKey.txt".toPath()
+        val templatePath = dir / "$templateKey.txt"
         val exists = FileSystem.SYSTEM.exists(templatePath)
-        val templateString = if (exists) {
-            FileSystem.SYSTEM.read(templatePath) {
-                readUtf8()
-            }.trim()
-        } else {
+        if (!exists) {
             FileSystem.SYSTEM.write(templatePath) {
                 writeUtf8(
                     defaultTemplate
                 )
             }
-            defaultTemplate
+        }
+        val templateString = FileSystem.SYSTEM.read(templatePath) {
+            readUtf8().trim()
         }
 
         return { song: JsonObject ->
@@ -83,15 +96,21 @@ object Template {
             println(it)
         }
         val formatter = load(
+            dir = tracklist.exportPath,
             defaultTemplate = defaultTemplate,
             templateKey = templateKey
         )
-        val jsonString = json.encodeToString(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
-        //        println(jsonString)
-        val encodedSongs = json.decodeFromString(
-            ListSerializer(JsonObject.serializer()),
-            jsonString
-        )
+        val encodedSongs =
+            json.encodeToJsonElement(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
+                .jsonArray.toList().map {
+                    it.jsonObject
+                }
+//        val jsonString = json.encodeToString(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
+//        println(jsonString)
+//        val encodedSongs = json.decodeFromString(
+//            ListSerializer(JsonObject.serializer()),
+//            jsonString
+//        )
         //        val encodedSongs = .json.encodeToJsonElement(ListSerializer(serializer), songs)
 //            .jsonArray
         val txt = encodedSongs
@@ -138,20 +157,30 @@ object Template {
 //            writeUtf8(md)
 //        }
 
-        val CSV_SEPARATOR = ","
-        val csv = keys.joinToString(CSV_SEPARATOR, postfix = "\n") {
-            if (it.contains(CSV_SEPARATOR)) {
-                '"' + it + '"'
-            } else it
-        } + values.joinToString("\n") { obj ->
-            obj.entries.joinToString(CSV_SEPARATOR) { (key, value) ->
-                (value.orEmpty()).let {
-                    if (it.contains(CSV_SEPARATOR)) {
-                        '"' + it + '"'
-                    } else it
-                }
-            }
-        }
+        val csv = CSVFormat {
+            includeHeader = true
+            separator = ','
+            lineSeparator = "\n"
+            numberFormat = CSVFormat.NumberFormat.Dot
+//            alwaysEmitQuotes = true
+        }.encodeToString(
+            ListSerializer(serializer), tracklist.tracks
+        )
+
+//        val CSV_SEPARATOR = ","
+//        val csv = keys.joinToString(CSV_SEPARATOR, postfix = "\n") {
+//            if (it.contains(CSV_SEPARATOR)) {
+//                '"' + it + '"'
+//            } else it
+//        } + values.joinToString("\n") { obj ->
+//            obj.entries.joinToString(CSV_SEPARATOR) { (key, value) ->
+//                (value.orEmpty()).let {
+//                    if (it.contains(CSV_SEPARATOR)) {
+//                        '"' + it + '"'
+//                    } else it
+//                }
+//            }
+//        }
         val csvPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.csv"
         println("writing to $csvPath")
         FileSystem.SYSTEM.write(csvPath) {
@@ -178,14 +207,15 @@ object Template {
         tracklists
             .map { it.exportPath }
             .distinct()
-            .forEach {
-                println("open $it ?")
-                println("hit Y + ENTER or y + ENTER to open the folder")
+            .forEach { path ->
+//                println("to open the folder: 'Y' or 'y; and ENTER to confirm")
 
-                val line = readlnOrNull()
-                if (line?.lowercase()?.trim()?.startsWith("y") ?: true) {
-                    openFolder(it)
-                }
+//                val line = readlnOrNull()
+//                if (line?.lowercase()?.trim()?.startsWith("y") ?: false) {
+                openFolder(path)
+//                } else {
+//
+//                }
             }
     }
 }

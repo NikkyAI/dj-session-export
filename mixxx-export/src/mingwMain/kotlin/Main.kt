@@ -142,7 +142,7 @@ fun main(vararg args: String) {
                         time = track.time - diff
                     )
                 }
-            )
+            ) { lastTrack, nextTrack -> nextTrack.time - lastTrack.time }
         }.let {tracklists ->
             Template.write(
                 tracklists,

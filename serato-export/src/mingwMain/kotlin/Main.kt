@@ -1,44 +1,17 @@
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
-import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 
-//val dateFormat = LocalDate.Format {
-//    monthNumber(padding = Padding.NONE)
-//    char('/')
-//    day(padding = Padding.NONE)
-//    char('/')
-//    year()
-//}
-//
-//val timeFormat = LocalTime.Format {
-//    amPmHour(padding = Padding.NONE)
-//    char(':')
-//    minute(padding = Padding.NONE)
-//    char(':')
-//    second(padding = Padding.NONE)
-//    char(' ')
-//    this.amPmMarker("AM", "PM")
-//}
-
-val dateTimeFormat = LocalDateTime.Format {
-    date(LocalDate.Formats.ISO)
-    char(' ')
-    time(LocalTime.Formats.ISO)
-}
 fun trackListFrom(session: Session): Tracklist<HistoryTrack>? {
     return try {
-        val referenceInstant = session.songs.first().timePlayed
-        //exportStartTime.toInstant(TimeZone.currentSystemDefault())
+        val referenceInstant = session.songs.first().playedAt
 
         val tracks = session.songs.map { it ->
             HistoryTrack(
-                time = it.timePlayed - referenceInstant,
-                timePlayed = it.timePlayed,
+                time = it.playedAt - referenceInstant,
+                playedAt = it.playedAt,
                 title = it.title,
                 artist = it.artist,
                 filePath = it.filePath,
@@ -46,14 +19,22 @@ fun trackListFrom(session: Session): Tracklist<HistoryTrack>? {
             )
         }
 
+        val dateTimeExportFormat = LocalDateTime.Format {
+            year()
+            char('-')
+            monthNumber()
+            char('-')
+            day()
+            char(' ')
+            hour()
+            char('-')
+            minute()
+        }
 
         Tracklist(
             title = referenceInstant.toLocalDateTime(
                 TimeZone.currentSystemDefault()
-            ).format(dateTimeFormat)
-
-                .replace(":", "-")
-                .replace("T", " "),
+            ).format(dateTimeExportFormat),
             exportPath = getExportFolder() / "Serato",
             tracks = tracks
         )
@@ -82,7 +63,7 @@ fun main(vararg args: String) {
             { it.time },
             { track, diff ->
                 track.copy(
-                    time = track.time - diff
+                    time = track.time - diff,
                 )
             },
         ) ?: emptyList()

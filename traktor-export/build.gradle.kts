@@ -25,9 +25,6 @@ kotlin {
         mingwMain.dependencies {
             implementation(project(":shared"))
             implementation("io.github.pdvrieze.xmlutil:serialization:_")
-            implementation("org.jetbrains.kotlinx:kotlinx-datetime:_")
-//            implementation("com.fleeksoft.ksoup:ksoup:_")
-            implementation("com.squareup.okio:okio:_")
         }
     }
 }

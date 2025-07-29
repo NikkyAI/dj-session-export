@@ -5,7 +5,7 @@ data class Session(
     val songs: List<HistorySong>
 ) {
     data class HistorySong(
-        val timePlayed: Instant, // Date
+        val playedAt: Instant, // Date
         val title: String,
         val artist: String,
         val filePath: String,

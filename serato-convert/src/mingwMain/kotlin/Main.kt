@@ -1,7 +1,6 @@
 import app.softwork.serialization.csv.CSVFormat
 import app.softwork.serialization.flf.FixedLengthFormat
 import com.saveourtool.okio.safeToRealPath
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
@@ -17,7 +16,6 @@ import okio.FileSystem
 import okio.buffer
 import okio.use
 import okio.Path.Companion.toPath
-import kotlin.system.exitProcess
 
 val dateFormat = LocalDate.Format {
     monthNumber(padding = Padding.NONE)
@@ -58,10 +56,9 @@ fun parseInstant(startTimeString: String): Instant {
 
 @OptIn(ExperimentalSerializationApi::class)
 fun parseFLF(filePath: Path): List<SeratoExport> {
-    val data = FileSystem.SYSTEM.source(filePath)
-        .buffer()
-        .use { source ->
-            source.readUtf8()
+    val data = FileSystem.SYSTEM
+        .read(filePath) {
+            readUtf8()
         }
         .let {
             it.lines().filterIndexed { i, s -> i != 0 && i != 1 && i != 3 }
@@ -87,8 +84,8 @@ fun parseFLF(filePath: Path): List<SeratoExport> {
 @OptIn(ExperimentalSerializationApi::class)
 fun parseCSV(filePath: Path): List<SeratoExport> {
 
-    val data = FileSystem.SYSTEM.source(filePath).buffer().use { source ->
-        source.readUtf8()
+    val data = FileSystem.SYSTEM.read(filePath) {
+        readUtf8()
     }.let { csv ->
         CSVFormat {
             separator = ','
@@ -100,15 +97,6 @@ fun parseCSV(filePath: Path): List<SeratoExport> {
 
 fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTrack>? {
     return try {
-//        val data = FileSystem.SYSTEM.source(filePath).buffer().use { source ->
-//            source.readUtf8()
-//        }.let { csv ->
-//            CSVFormat {
-//                separator = ','
-//                alwaysEmitQuotes = true
-//            }.decodeFromString(ListSerializer(SeratoExport.serializer()), csv)
-//        }
-
         val exportData = data.first()
         val exportDate = LocalDate.parse(exportData.name, dateFormat)
         val exportStartTime = parseLocalDatetime(exportData.startTime)
@@ -219,7 +207,7 @@ fun main(vararg args: String) {
                     time = track.time - diff
                 )
             }
-        )
+        ) { lastTrack, nextTrack -> lastTrack.endAt - nextTrack.startAt }
             ?: emptyList()
     }
     Template.write(

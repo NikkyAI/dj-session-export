@@ -99,10 +99,19 @@ fun main(vararg args: String) {
             SELECT sqlcipher_export('plaintext');
             DETACH DATABASE plaintext;
         """.trimIndent()
+            .lines()
+            .joinToString(" ")
 
-        val response = executeCommand(
-            "$sqlCipherPath $encryptedPath \"${sql.replace("\n", " ")}\"",
-            redirectStderr = false
+//        val response = executeCommand(
+//            "$sqlCipherPath $encryptedPath \"$sql\"",
+//            redirectStderr = false
+//        )
+        val response = executeCommandAndCaptureOutput(
+            listOf(
+                sqlCipherPath.toString(),
+                encryptedPath.toString(),
+                sql
+            )
         )
 
         println(response)
@@ -206,7 +215,7 @@ fun main(vararg args: String) {
                         time = track.time - diff
                     )
                 },
-            )
+            ) { lastTrack, nextTrack -> nextTrack.time - lastTrack.time }
         }.let { tracklists ->
             Template.write(
                 tracklists,

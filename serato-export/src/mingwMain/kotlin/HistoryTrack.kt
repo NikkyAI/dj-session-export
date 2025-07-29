@@ -7,7 +7,7 @@ data class HistoryTrack(
     @Serializable(with = DurationSerializer::class)
     val time: Duration,
     @Serializable(with = InstantSerializer::class)
-    val timePlayed: Instant, // Date
+    val playedAt: Instant, // Date
     val title: String,
     val artist: String,
     val filePath: String,

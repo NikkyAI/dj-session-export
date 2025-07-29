@@ -20,19 +20,12 @@ default:
 
 # Tools
 
-## [traktor convert](./traktor-convert/README.md)
 
-Converter for Traktor HTML session export
+## [traktor](./traktor-export/README.md)
 
-## [traktor export](./traktor-export/README.md)
+Exporter for Traktor History (reading `nml` files)
 
-Exporter for Traktor History (`nml` files)
-
-## [serato convert](./serato-convert/README.md)
-
-Converter for Serato session export
-
-## [serato export](./serato-export/README.md)
+## [serato](./serato-export/README.md)
 
 Exporter for Serato History
 

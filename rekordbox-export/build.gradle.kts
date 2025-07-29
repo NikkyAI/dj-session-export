@@ -22,7 +22,9 @@ kotlin {
         binaries {
             executable() {
                 this.entryPoint = "main"
-//                baseName = "rekordbox-history-exporter"
+                if(System.getenv("CI") == null) {
+                    baseName = project.name + "-dev"
+                }
                 runTaskProvider?.get()?.also { runTask ->
                     val args = providers.gradleProperty("runArgs")
                     runTask.workingDir = file("run").also { it.mkdirs() }

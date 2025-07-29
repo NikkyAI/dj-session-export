@@ -8,6 +8,9 @@ kotlin {
         binaries {
             executable() {
                 entryPoint = "main"
+                if(System.getenv("CI") == null) {
+                    baseName = project.name + "-dev"
+                }
                 runTaskProvider?.get()?.also { runTask ->
                     val args = providers.gradleProperty("runArgs")
                     runTask.workingDir = file("run").also { it.mkdirs() }
@@ -22,7 +25,6 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":shared"))
             implementation("com.fleeksoft.io:io:_")
-//            implementation("com.fleeksoft.io:okio:_")
         }
         mingwMain.dependencies {
         }

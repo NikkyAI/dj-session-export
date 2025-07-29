@@ -22,6 +22,10 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-io-okio:_")
 
             implementation("com.saveourtool.okio-extras:okio-extras:_")
+
+            implementation("app.softwork:kotlinx-serialization-csv:_")
+
+//            implementation("com.kgit2:kommand:_")
         }
     }
 }

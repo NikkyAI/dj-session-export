@@ -42,15 +42,15 @@ data class History(
             @SerialName("LOCATION")
             data class Location(
                 @SerialName("DIR")
-                val dir: String?=null,
+                val dir: String? = null,
                 @SerialName("FILE")
-                val file: String?=null,
+                val file: String? = null,
                 @SerialName("VOLUME")
-                val volume: String?=null,
+                val volume: String? = null,
                 @SerialName("WEBADDRESS")
-                val webadress: String?=null,
+                val webAddress: String? = null,
             ) {
-                val fullPath get() = webadress ?: (volume + dir + file)
+                val fullPath get() = webAddress ?: (volume + dir + file)
             }
 
             @Serializable

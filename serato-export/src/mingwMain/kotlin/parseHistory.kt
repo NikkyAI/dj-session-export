@@ -84,8 +84,8 @@ fun parseChunkArray(buffer: ByteBuffer, start: Int, end: Int): List<Chunk> {
 fun getSessions(path: Path): Map<Int, String> {
     println("getSessions")
     val sessions = mutableMapOf<Int, String>()
-    val buffer = FileSystem.SYSTEM.source(path).buffer().use {
-        ByteBufferFactory.wrap(it.readByteArray())
+    val buffer = FileSystem.SYSTEM.read(path) {
+        ByteBufferFactory.wrap(readByteArray())
     }
     val chunks = parseChunkArray(buffer, 0, buffer.limit())
 
@@ -111,8 +111,8 @@ fun getSessions(path: Path): Map<Int, String> {
 
 fun getSessionSongs(path: Path): List<Session.HistorySong> {
     println("getSessionSongs")
-    val buffer = FileSystem.SYSTEM.source(path).buffer().use {
-        ByteBufferFactory.wrap(it.readByteArray())
+    val buffer = FileSystem.SYSTEM.read(path) {
+        ByteBufferFactory.wrap(readByteArray())
     }
     val chunks = parseChunkArray(buffer, 0, buffer.limit())
 
@@ -140,7 +140,7 @@ fun getSessionSongs(path: Path): List<Session.HistorySong> {
                 }
                 songs.add(
                     Session.HistorySong(
-                        timePlayed = timePlayed!!,
+                        playedAt = timePlayed!!,
                         title = title,
                         artist = artist,
                         filePath = filePath,
@@ -159,7 +159,7 @@ fun getSeratoHistory(seratoPath: Path = defaultSeratoPath): List<Session> {
 
     for ((sessionIndex, key) in sessions) {
         val songlist = getSessionSongs(seratoPath / "History/Sessions/$sessionIndex.session")
-        result += Session(date = key, songs = songlist.sortedBy { it.timePlayed })
+        result += Session(date = key, songs = songlist.sortedBy { it.playedAt })
     }
     return result;
 }
