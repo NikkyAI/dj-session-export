@@ -7,8 +7,6 @@ import kotlinx.datetime.format.char
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
-import okio.buffer
-import okio.use
 import kotlin.time.Duration.Companion.seconds
 
 val durationFormat = LocalTime.Companion.Format {
@@ -120,7 +118,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
                         title = cells.titleField(),
                         artist = cells.artistField(),
                         genre = cells.genreField(),
-                        playedAt = timestamp,
+                        startAt = timestamp,
                         duration = run {
                             val duration = cells.durationField()
 
@@ -143,7 +141,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
         Tracklist(
             title = title,
             exportPath = filePath.safeToRealPath().parent ?: ".".toPath(),
-            tracks = tracks.sortedBy { it.playedAt }
+            tracks = tracks.sortedBy { it.startAt }
         )
         //.sortedBy { it.trackNum }
 

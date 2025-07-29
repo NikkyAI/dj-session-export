@@ -20,30 +20,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-val TMP = FileSystem.SYSTEM_TEMPORARY_DIRECTORY
-val FS = FileSystem.SYSTEM
-
-val sqliteDatetimeFormat = DateTimeComponents.Format {
-    year();
-    char('-');
-    monthNumber();
-    char('-');
-    day()
-    char(' ')
-    hour()
-    char(':')
-    minute()
-    char(':')
-    second()
-}
-
-val outputTimestampFormat = LocalTime.Format {
-    hour(Padding.ZERO)
-    char(':')
-    minute(Padding.ZERO)
-    char(':')
-    second(Padding.ZERO)
-}
 
 @OptIn(ExperimentalForeignApi::class)
 fun main(vararg args: String) {
@@ -114,10 +90,10 @@ fun main(vararg args: String) {
                         Song(
                             position = songRow.get("position").asInt(),
                             time = (timestamp - referenceTimestamp),
-                            timestamp = timestamp,
-                            duration = songRow.get("duration").asDoubleOrNull()
-                                ?.takeUnless { it == 0.0 }
-                                ?.seconds,
+                            startAt = timestamp,
+//                            duration = songRow.get("duration").asDoubleOrNull()
+//                                ?.takeUnless { it == 0.0 }
+//                                ?.seconds,
                             title = songRow.get("title").asString(),
                             artist = songRow.get("artist").asStringOrNull(),
                             album = songRow.get("album").asStringOrNull(),

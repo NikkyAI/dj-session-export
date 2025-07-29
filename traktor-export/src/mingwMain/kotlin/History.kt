@@ -165,7 +165,7 @@ data class History(
                     @SerialName("PLAYEDPUBLIC")
                     val playedPublic: Int,
                     @SerialName("STARTDATE")
-                    val startDate: Long,
+                    val startDate: Int,
                     @SerialName("STARTTIME")
                     val startTime: Int,
                 )

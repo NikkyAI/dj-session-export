@@ -26,7 +26,6 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import platform.posix.getenv
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -190,8 +189,8 @@ fun main(vararg args: String) {
                             Song(
                                 position = row.get("TrackNo").asInt(),
                                 time = (timestamp - referenceTimestamp),
-                                timestamp = timestamp,
-                                duration = row.get("Length").asInt().seconds,
+                                startAt = timestamp,
+//                                duration = row.get("Length").asInt().seconds,
                                 title = row.get("Title").asString(),
                                 artist = row.get("Artist").asStringOrNull(),
                                 label = row.get("Label").asStringOrNull(),

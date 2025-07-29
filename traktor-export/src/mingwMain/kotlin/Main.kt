@@ -3,6 +3,7 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
 import nl.adaptivity.xmlutil.serialization.XML
 import okio.FileNotFoundException
@@ -11,6 +12,7 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import kotlin.system.exitProcess
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 val xmlLenient = XML {
@@ -26,6 +28,28 @@ val xmlLenient = XML {
 //}
 
 fun parseNml(nmlPath: Path): Tracklist<Track>? {
+
+    val dateTime = LocalDateTime.parse(
+        nmlPath.name,
+        LocalDateTime.Format {
+            chars("history_")
+            year()
+            char('y')
+            monthNumber()
+            char('m')
+            day()
+            char('d')
+            char('_')
+            hour()
+            char('h')
+            minute()
+            char('m')
+            second()
+            char('s')
+            chars(".nml")
+        }
+    )
+
 
     val history = FileSystem.SYSTEM.read(nmlPath) {
         readUtf8()
@@ -46,12 +70,21 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
             .filter { it.extendedData.playedPublic == 1 }
             .filter { it.primaryKey.type == "TRACK" }
             .map { entry ->
+
+                val startDate = entry.extendedData.startDate.let { startDate ->
+                    val day = startDate % 256
+                    val month = (startDate / 256) % 256
+                    val year = (startDate / 256) / 256
+                    LocalDate(year,month,day)
+                }
+
                 val start = LocalDateTime(
                     // just guessing a offset here
-                    LocalDate.fromEpochDays(entry.extendedData.startDate - 132625397),
+                    startDate,
                     LocalTime.fromSecondOfDay(entry.extendedData.startTime)
                 )
-                    .toInstant(TimeZone.UTC)
+                    .toInstant(TimeZone.currentSystemDefault())
+
                 entry to start
             }
 
@@ -69,11 +102,11 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
 
         Track(
             time = start - referenceInstant,
-            duration = entry.extendedData.duration.seconds,
+            playDuration = entry.extendedData.duration.seconds,
             endTime = (start - referenceInstant) + entry.extendedData.duration.seconds,
-            playedAt = start,
+            startAt = start,
             title = collectionEntry.title,
-            artist = collectionEntry.artist?.deduplicate(),
+            artist = collectionEntry.artist?.deduplicateRepeating(),
             album = collectionEntry.album?.title,
             label = collectionEntry.info?.label,
             remixer = collectionEntry.info?.remixer,
@@ -103,11 +136,13 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
 }
 
 fun main(vararg args: String) {
-    val epochDays = LocalDate(2024,11,13).toEpochDays()
-    println(Int.MAX_VALUE)
+    val epochDays = LocalDate(2024, 11, 19).toEpochDays()
+//    println(Int.MAX_VALUE)
     println(epochDays)
-    println(epochDays-132647699)
-    val date = LocalDate.fromEpochDays(epochDays-132647699)
+    val refEpoch = epochDays - 132647699
+    println(refEpoch)
+    println(refEpoch.days)
+    val date = LocalDate.fromEpochDays(refEpoch)
     println(date)
 //    exitProcess(0)
 
@@ -176,10 +211,10 @@ fun main(vararg args: String) {
                     { track, diff ->
                         track.copy(
                             time = track.time - diff,
-                            endTime = (track.time - diff) + track.duration
+                            endTime = (track.time - diff) + track.playDuration
                         )
                     }
-                ) { lastTrack, nextTrack -> nextTrack.endTime - lastTrack.time }
+                ) { lastTrack, nextTrack -> nextTrack.endAt - lastTrack.startAt }
                 .orEmpty()
         } catch (e: Exception) {
             println()

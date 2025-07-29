@@ -13,8 +13,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.builtins.ListSerializer
 import okio.Path
 import okio.FileSystem
-import okio.buffer
-import okio.use
 import okio.Path.Companion.toPath
 
 val dateFormat = LocalDate.Format {
@@ -133,7 +131,7 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
                 title = it.name,
                 startAt = startTime,
                 endAt = endTime,
-                playTime = it.playtime,
+                playDuration = it.playtime,
                 deck = it.deck.toInt(),
                 notes = it.notes,
             )

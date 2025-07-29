@@ -52,7 +52,7 @@ data class SeratoTrack(
     @Serializable(with = InstantSerializer::class)
     val endAt: Instant,
     @Serializable(with = DurationSerializer::class)
-    val playTime: Duration,
+    val playDuration: Duration,
     val deck: Int,
     val notes: String,
 )

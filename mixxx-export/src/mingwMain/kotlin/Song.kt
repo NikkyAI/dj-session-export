@@ -8,9 +8,9 @@ data class Song(
     @Serializable(with=DurationSerializer::class)
     val time: Duration,
     @Serializable(with=InstantSerializer::class)
-    val timestamp: Instant,
-    @Serializable(with=DurationSerializer::class)
-    val duration: Duration?,
+    val startAt: Instant,
+//    @Serializable(with=DurationSerializer::class)
+//    val duration: Duration?,
     val title: String,
     val artist: String?,
     val album: String?,

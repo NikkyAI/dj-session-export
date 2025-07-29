@@ -8,7 +8,7 @@ data class TrackData(
     @Serializable(with = DurationSerializer::class)
     val time: Duration,
     @Serializable(with = InstantSerializer::class)
-    val playedAt: Instant,
+    val startAt: Instant,
     @Serializable(with = DurationSerializer::class)
     val duration: Duration,
     val title: String,
@@ -18,5 +18,5 @@ data class TrackData(
     val key: String?,
 ) {
     @Serializable(with = InstantSerializer::class)
-    val endTime = playedAt + duration
+    val endAt = startAt + duration
 }

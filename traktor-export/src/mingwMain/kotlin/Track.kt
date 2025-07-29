@@ -1,4 +1,3 @@
-import kotlinx.datetime.UtcOffset
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 import kotlin.time.Instant
@@ -6,11 +5,11 @@ import kotlin.time.Instant
 @Serializable
 data class Track(
     @Serializable(with = InstantSerializer::class)
-    val playedAt: Instant,
+    val startAt: Instant,
     @Serializable(with = DurationSerializer::class)
     val time: Duration,
-    @Serializable(with = DurationSerializer::class)
-    val duration: Duration,
+//    @Serializable(with = DurationSerializer::class)
+    val playDuration: Duration,
     @Serializable(with = DurationSerializer::class)
     val endTime: Duration,
     val title: String,
@@ -23,5 +22,5 @@ data class Track(
     val file: String?,
 ) {
     @Serializable(with = InstantSerializer::class)
-    val endAt = playedAt + duration
+    val endAt = startAt + playDuration
 }

@@ -1,13 +1,10 @@
-fun String.deduplicate(): String {
+fun String.deduplicateRepeating(separator: String = " "): String {
     (2..length - 1).forEach { i ->
         val candidate = substring(0, i)
 
-//        println("candiate: '$candidate'")
-
         val shouldBeAllSpaces = split(candidate)
-//        println(shouldBeAllSpaces)
 
-        val match = shouldBeAllSpaces.all { it == " " || it == "" }
+        val match = shouldBeAllSpaces.all { it == separator || it.isEmpty() }
         if (match) {
             return candidate
         }

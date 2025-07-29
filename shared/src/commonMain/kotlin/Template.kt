@@ -92,9 +92,9 @@ object Template {
                 tracklist.exportPath.safeToRealPath()
             )
         }
-        tracklist.tracks.forEach {
-            println(it)
-        }
+//        tracklist.tracks.forEach {
+//            println(it)
+//        }
         val formatter = load(
             dir = tracklist.exportPath,
             defaultTemplate = defaultTemplate,
