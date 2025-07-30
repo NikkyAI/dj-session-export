@@ -25,7 +25,7 @@ kotlin {
 
             implementation("app.softwork:kotlinx-serialization-csv:_")
 
-//            implementation("com.kgit2:kommand:_")
+            implementation("com.kgit2:kommand:_")
         }
     }
 }

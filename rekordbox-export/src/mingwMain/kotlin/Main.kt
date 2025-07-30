@@ -1,5 +1,7 @@
 @file:OptIn(ExperimentalTime::class)
 
+import com.kgit2.kommand.process.Command
+import com.kgit2.kommand.process.Stdio
 import io.github.smyrgeorge.sqlx4k.Driver
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asInt
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asIntOrNull
@@ -52,7 +54,7 @@ fun Duration.formatTimestamp(): String {
 @OptIn(ExperimentalForeignApi::class)
 fun main(vararg args: String) {
 
-    val sqlCipherPath = TMP / "rekordbox-history-converter" / "sqlcipher.exe"
+    val sqlCipherPath = TMP / "rekordbox-export" / "sqlcipher.exe"
 
     val appdata = getenv("APPDATA")?.toKString() ?: error("cannot lookup %APPDATA%")
     val encryptedPath = appdata.toPath(true) / "Pioneer" / "rekordbox" / "master.db"
@@ -86,7 +88,7 @@ fun main(vararg args: String) {
         println("downloaded sqlcipher")
     }
 
-    val dbPath = TMP / "rekordbox-history-converter" / "plaintext.db"
+    val dbPath = TMP / "rekordbox-export" / "plaintext.db"
     FS.delete(dbPath, mustExist = false)
 
     // decoding master.db
@@ -99,32 +101,45 @@ fun main(vararg args: String) {
             DETACH DATABASE plaintext;
         """.trimIndent()
             .lines()
-        val sqlQuoted = sqlLines
-            .joinToString(" ", "\"", "\"")
+            .filter { it.isNotBlank() }
+//        val sqlQuoted = sqlLines
+//            .joinToString(" ", "\"", "\"")
         val sql = sqlLines
             .joinToString(" ")
-/*
+
         Command(
             sqlCipherPath.toString()
         )
             .args(
                 listOf(
                     encryptedPath.toString(),
-                    sqlQuoted
+//                    sql
                 )
             )
+            .also {
+                println(it.debugString())
+            }
+            .stdin(Stdio.Pipe)
+            .stdout(Stdio.Inherit)
             .spawn()
+            .apply {
+                bufferedStdin()?.let { writer ->
+                    sqlLines.forEach {
+                        writer.writeLine(it)
+                    }
+                }
+            }
             .wait()
-*/
-        val response = executeCommandAndCaptureOutput(
-            listOf(
-                sqlCipherPath.toString(),
-                encryptedPath.toString(),
-                sql
-            )
-        )
 
-        println(response)
+//        val response = executeCommandAndCaptureOutput(
+//            listOf(
+//                sqlCipherPath.toString(),
+//                encryptedPath.toString(),
+//                sql
+//            )
+//        )
+//
+//        println(response)
     }
 
     // Additionally, you can set minConnections, acquireTimeout, idleTimeout, etc.
@@ -228,8 +243,8 @@ fun main(vararg args: String) {
             ) { lastTrack, nextTrack -> nextTrack.time - lastTrack.time }
         }.map { tracklist->
             tracklist.copy(
-                tracks=tracklist.tracks.mapIndexed { i, it ->
-                    it.copy(
+                tracks=tracklist.tracks.mapIndexed { i, track ->
+                    track.copy(
                         position = i+1,
                     )
                 }

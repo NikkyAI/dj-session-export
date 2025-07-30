@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
 import app.softwork.serialization.csv.CSVFormat
+import com.kgit2.kommand.process.Command
+import com.kgit2.kommand.process.Stdio
 import com.saveourtool.okio.safeToRealPath
 import com.saveourtool.okio.toFileUri
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -16,33 +18,21 @@ import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
 
-//val hasOpened = mutableListOf<Path>()
 fun openFolder(path: Path) {
     println("opening $path")
     try {
-//        Command("powershell.exe")
-//            .args(
-//                "-Command",
-//                "Invoke-Item",
-//                "\"$path\"",
-//            )
-//            .stdout(Stdio.Inherit)
-//            .spawn()
-        executeCommandAndCaptureOutput(
-            listOf(
-                "powershell.exe",
+        Command("powershell.exe")
+            .args(
                 "-Command",
                 "Invoke-Item",
-                path.toString()
+                "'$path'",
             )
-        )
-//            executeCommand("start \"\" \"$path\"", trim = false, redirectStderr = false)
-//            executeCommand("start \"\" \"$path\"", trim = false, redirectStderr = false)
+            .stdout(Stdio.Inherit)
+            .spawn()
+            .wait()
     } catch (e: Exception) {
         println(e.message)
     }
-//        hasOpened += realPath
-//    }
 }
 
 object Template {

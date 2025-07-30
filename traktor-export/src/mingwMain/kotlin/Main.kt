@@ -1,3 +1,5 @@
+import com.kgit2.kommand.process.Command
+import com.kgit2.kommand.process.Stdio
 import com.saveourtool.okio.safeToRealPath
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
@@ -27,30 +29,22 @@ val xmlLenient = XML {
 //    }
 //}
 
+val filenameFormat = LocalDateTime.Format {
+    chars("history_")
+    year()
+    char('-')
+    monthNumber()
+    char('-')
+    day()
+    char('_')
+    hour()
+    char('-')
+    minute()
+    char('-')
+    second()
+}
+
 fun parseNml(nmlPath: Path): Tracklist<Track>? {
-
-    val dateTime = LocalDateTime.parse(
-        nmlPath.name,
-        LocalDateTime.Format {
-            chars("history_")
-            year()
-            char('y')
-            monthNumber()
-            char('m')
-            day()
-            char('d')
-            char('_')
-            hour()
-            char('h')
-            minute()
-            char('m')
-            second()
-            char('s')
-            chars(".nml")
-        }
-    )
-
-
     val history = FileSystem.SYSTEM.read(nmlPath) {
         readUtf8()
     }.let {
@@ -119,7 +113,7 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
     val traktorFolderName = nmlPath.parent?.takeIf { it.name == "History" }
         ?.parent?.takeIf { it.name.startsWith("Traktor") }
         ?.name
-        ?.replace(" ", "_")
+//         ?.replace(" ", "_")
 
     val tracklists = Tracklist(
         title = nmlPath.name.substringBeforeLast(".nml"),
@@ -146,13 +140,17 @@ fun main(vararg args: String) {
     println(date)
 //    exitProcess(0)
 
-    val documents = executeCommandAndCaptureOutput(
-        listOf(
-            "powershell.exe",
+    val documents = Command("powershell.exe")
+        .args(
             "-Command",
             "[Environment]::GetFolderPath('MyDocuments')"
         )
-    )
+        .stdout(Stdio.Pipe)
+        .spawn()
+        .waitWithOutput()
+        .stdout
+        ?.trim()
+        ?: error("failed to get documents folder location using powershell")
 
     val nativeInstrumentsPath = documents.toPath() / "Native Instruments"
 
@@ -213,9 +211,28 @@ fun main(vararg args: String) {
                             time = track.time - diff,
                             endTime = (track.time - diff) + track.playDuration
                         )
-                    }
+                    },
                 ) { lastTrack, nextTrack -> nextTrack.endAt - lastTrack.startAt }
                 .orEmpty()
+//                .map { tracklist ->
+//                    println("remapping ${tracklist.title} with ${tracklist.tracks.size} tracks")
+//                    val firstTrack = tracklist.tracks.minBy { it.startAt }
+//                    val lastTrack = tracklist.tracks.maxBy { it.endAt }
+//                    val duration = lastTrack.endAt - firstTrack.startAt
+//                    val durationString = duration.toComponents { days, hours, minutes, seconds, _ ->
+//
+//                       if(days > 0) {
+//                            "${days}d${hours}h${minutes}m${seconds}"
+//                        } else if(hours > 0) {
+//                           "${hours}h${minutes}m${seconds}"
+//                       }else  {
+//                           "${minutes}m${seconds}"
+//                       }
+//                    }
+//                    tracklist.copy(
+//                        title = firstTrack.startAt.toLocalDateTime(TimeZone.currentSystemDefault()).format(filenameFormat) + "-$durationString"
+//                    )
+//                }
         } catch (e: Exception) {
             println()
             e.printStackTrace()
