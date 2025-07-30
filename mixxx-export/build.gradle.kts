@@ -21,6 +21,7 @@ kotlin {
                         args.orNull?.let { listOf(it) }/*?.split(' ')*/ ?: emptyList()
                     }
                 }
+                linkerOpts += listOf("-Wl,--allow-multiple-definition")
             }
         }
     }
