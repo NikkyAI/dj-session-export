@@ -4,8 +4,11 @@ import kotlin.time.Duration.Companion.minutes
 fun <E : Any> Tracklist<E>.splitTracklists(
     timestampSelector: (E) -> Duration,
     subtractTime: (E, Duration) -> E,
-    calculateGap: (E, E) -> Duration = { a, b -> timestampSelector(b) - timestampSelector(a) }
+//    generateTitle: (Tracklist<E>, List<E>, Int) -> String = { original, newTracks, playlistCount -> original.title + "_$playlistCount" },
+    calculateGap: (E, E) -> Duration = { a, b -> timestampSelector(b) - timestampSelector(a) },
 ): List<Tracklist<E>> {
+    if(this.tracks.isEmpty()) return emptyList()
+
     val tracklists = mutableListOf(this)
 
 //    var subtractTime = Duration.ZERO

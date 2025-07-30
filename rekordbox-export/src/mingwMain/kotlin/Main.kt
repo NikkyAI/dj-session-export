@@ -92,19 +92,30 @@ fun main(vararg args: String) {
     // decoding master.db
     runBlocking {
 
-        val sql = """
+        val sqlLines = """
             PRAGMA key='402fd482c38817c35ffa8ffb8c7d93143b749e7d315df7a81732a1ff43608497';
             ATTACH DATABASE '$dbPath' AS plaintext KEY '';
             SELECT sqlcipher_export('plaintext');
             DETACH DATABASE plaintext;
         """.trimIndent()
             .lines()
+        val sqlQuoted = sqlLines
+            .joinToString(" ", "\"", "\"")
+        val sql = sqlLines
             .joinToString(" ")
-
-//        val response = executeCommand(
-//            "$sqlCipherPath $encryptedPath \"$sql\"",
-//            redirectStderr = false
-//        )
+/*
+        Command(
+            sqlCipherPath.toString()
+        )
+            .args(
+                listOf(
+                    encryptedPath.toString(),
+                    sqlQuoted
+                )
+            )
+            .spawn()
+            .wait()
+*/
         val response = executeCommandAndCaptureOutput(
             listOf(
                 sqlCipherPath.toString(),
@@ -215,6 +226,14 @@ fun main(vararg args: String) {
                     )
                 },
             ) { lastTrack, nextTrack -> nextTrack.time - lastTrack.time }
+        }.map { tracklist->
+            tracklist.copy(
+                tracks=tracklist.tracks.mapIndexed { i, it ->
+                    it.copy(
+                        position = i+1,
+                    )
+                }
+        )
         }.let { tracklists ->
             Template.write(
                 tracklists,
