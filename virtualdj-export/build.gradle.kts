@@ -4,35 +4,36 @@ import org.jetbrains.kotlin.konan.target.HostManager
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    id("multiplatform.binaries")
 }
 
 kotlin {
-    mingwX64 {
-        binaries {
-            executable() {
-                entryPoint = "main"
-//                if(System.getenv("CI") == null) {
-//                    baseName = "virtualdj-export-testbuild"
+//    mingwX64 {
+//        binaries {
+//            executable() {
+//                entryPoint = "main"
+////                if(System.getenv("CI") == null) {
+////                    baseName = "virtualdj-export-testbuild"
+////                }
+//                runTaskProvider?.get()?.also { runTask ->
+//                    val args = providers.gradleProperty("runArgs")
+//                    runTask.workingDir = file("run").also { it.mkdirs() }
+//                    runTask.argumentProviders.add {
+//                        args.orNull?.let { listOf(it) }/*?.split(' ')*/ ?: emptyList()
+//                    }
 //                }
-                runTaskProvider?.get()?.also { runTask ->
-                    val args = providers.gradleProperty("runArgs")
-                    runTask.workingDir = file("run").also { it.mkdirs() }
-                    runTask.argumentProviders.add {
-                        args.orNull?.let { listOf(it) }/*?.split(' ')*/ ?: emptyList()
-                    }
-                }
-            }
-        }
-    }
+//            }
+//        }
+//    }
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))
-            implementation("io.github.pdvrieze.xmlutil:serialization:_")
+//            implementation("io.github.pdvrieze.xmlutil:serialization:_")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:_")
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
 
             implementation("com.squareup.okio:okio:_")
-            implementation("com.saveourtool.okio-extras:okio-extras:_")
+//            implementation("com.saveourtool.okio-extras:okio-extras:_")
         }
         mingwMain.dependencies {
 //            implementation("io.ktor:ktor-client-winhttp:_")

@@ -4,6 +4,7 @@ import kotlin.time.Duration.Companion.minutes
 fun <E : Any> Tracklist<E>.splitTracklists(
     timestampSelector: (E) -> Duration,
     subtractTime: (E, Duration) -> E,
+    minDuration: Duration = 25.minutes,
 //    generateTitle: (Tracklist<E>, List<E>, Int) -> String = { original, newTracks, playlistCount -> original.title + "_$playlistCount" },
     calculateGap: (E, E) -> Duration = { a, b -> timestampSelector(b) - timestampSelector(a) },
 ): List<Tracklist<E>> {
@@ -20,10 +21,10 @@ fun <E : Any> Tracklist<E>.splitTracklists(
                 val newTracks = (
                         listOf(tracks.first()) + tracks.zipWithNext()
                             .takeWhile { (track, nextTrack) ->
-                                val trackStart = timestampSelector(track)
-                                val nextStart = timestampSelector(nextTrack)
+//                                val trackStart = timestampSelector(track)
+//                                val nextStart = timestampSelector(nextTrack)
 
-                                calculateGap(track, nextTrack) <= 15.minutes
+                                calculateGap(track, nextTrack) <= minDuration
                             }.map { it.second })
 //                    .map {
 //                        subtractTime(it, start)
@@ -40,10 +41,10 @@ fun <E : Any> Tracklist<E>.splitTracklists(
 
             val newTracks = (listOf(track) + tracks.drop(i).zipWithNext()
                 .takeWhile { (track, nextTrack) ->
-                    val trackStart = timestampSelector(track)
-                    val nextStart = timestampSelector(nextTrack)
+//                    val trackStart = timestampSelector(track)
+//                    val nextStart = timestampSelector(nextTrack)
 
-                    calculateGap(track, nextTrack) <= 15.minutes
+                    calculateGap(track, nextTrack) <= minDuration
                 }.map { it.second })
                 .map {
                     subtractTime(it, start)

@@ -19,3 +19,26 @@ data class Track(
 //    val bpm: Float?,
 //    val key: String?,
 )
+
+@Serializable
+data class M3UTrack(
+    val position: Int,
+    @Serializable(with=DurationSerializer::class)
+    val time: Duration,
+    @Serializable(with=InstantSerializer::class)
+    val startAt: Instant,
+    val title: String?,
+    val artist: String?,
+    val remix: String?,
+    val file: String,
+)
+@Serializable
+data class SimpleTrack(
+    val position: Int,
+    @Serializable(with=DurationSerializer::class)
+    val time: Duration,
+    @Serializable(with=InstantSerializer::class)
+    val startAt: Instant,
+    val artist: String?,
+    val title: String,
+)

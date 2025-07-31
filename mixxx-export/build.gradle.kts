@@ -4,27 +4,28 @@ import org.jetbrains.kotlin.konan.target.HostManager
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    id("multiplatform.binaries")
 }
 
 kotlin {
-    mingwX64 {
-        binaries {
-            executable() {
-                entryPoint = "main"
-                if(System.getenv("CI") == null) {
-                    baseName = project.name + "-dev"
-                }
-                runTaskProvider?.get()?.also { runTask ->
-                    val args = providers.gradleProperty("runArgs")
-                    runTask.workingDir = file("run").also { it.mkdirs() }
-                    runTask.argumentProviders.add {
-                        args.orNull?.let { listOf(it) }/*?.split(' ')*/ ?: emptyList()
-                    }
-                }
-                linkerOpts += listOf("-Wl,--allow-multiple-definition")
-            }
-        }
-    }
+//    mingwX64 {
+//        binaries {
+//            executable() {
+//                entryPoint = "main"
+//                if(System.getenv("CI") == null) {
+//                    baseName = project.name + "-dev"
+//                }
+//                runTaskProvider?.get()?.also { runTask ->
+//                    val args = providers.gradleProperty("runArgs")
+//                    runTask.workingDir = file("run").also { it.mkdirs() }
+//                    runTask.argumentProviders.add {
+//                        args.orNull?.let { listOf(it) }/*?.split(' ')*/ ?: emptyList()
+//                    }
+//                }
+//                linkerOpts += listOf("-Wl,--allow-multiple-definition")
+//            }
+//        }
+//    }
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))

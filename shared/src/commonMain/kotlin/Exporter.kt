@@ -4,19 +4,19 @@ import app.softwork.serialization.csv.CSVFormat
 import com.kgit2.kommand.process.Command
 import com.kgit2.kommand.process.Stdio
 import com.saveourtool.okio.safeToRealPath
-import com.saveourtool.okio.toFileUri
+//import korlibs.template.KorteAutoEscapeMode
+//import korlibs.template.KorteTemplate
+//import korlibs.template.KorteTemplateConfig
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
 
 fun openFolder(path: Path) {
     println("opening $path")
@@ -35,12 +35,12 @@ fun openFolder(path: Path) {
     }
 }
 
-object Template {
+object Exporter {
     val default = """
         {time} {artist} - {title}
     """.trimIndent().trim()
 
-    fun load(
+    private fun loadFormatter(
         dir: Path,
         defaultTemplate: String = default,
         templateKey: String = "template",
@@ -65,9 +65,58 @@ object Template {
         }
     }
 
+//    suspend fun <E> write(
+//        tracklist: Tracklist<E>,
+//        serializer: KSerializer<E>,
+////        defaultTemplate: String = default,
+//    ) {
+//        if (tracklist.tracks.isEmpty()) {
+//            println("tracklist ${tracklist.title} was empty")
+//            return
+//        }
+//        println("writing ${tracklist.title}")
+//        if (!FileSystem.SYSTEM.exists(tracklist.exportPath.safeToRealPath())) {
+//            println("creating ${tracklist.exportPath}")
+//            FileSystem.SYSTEM.createDirectories(
+//                tracklist.exportPath.safeToRealPath()
+//            )
+//        }
+//
+//        val template = KorteTemplate(
+//            "{{time}} {{artist }} - {{title ?: file}}",
+//            config = KorteTemplateConfig(
+//                autoEscapeMode = KorteAutoEscapeMode.RAW,
+//
+//            ),
+//        )
+//        val formatter = template.invoke(
+//
+//        )
+//        val encodedSongs =
+//            json.encodeToJsonElement(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
+//                .jsonArray.toList().map {
+//                    it.jsonObject
+//                }
+//        val txt = encodedSongs
+//            .map { songObj ->
+//                template.invoke(
+//                    songObj.entries.associate { (key, value) ->
+//                        key to value.jsonPrimitive.contentOrNull
+//                    }
+//                )
+//            }
+//            .joinToString("\n")
+//        val txtPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.new.txt"
+//        println("writing to $txtPath")
+//        FileSystem.SYSTEM.write(txtPath) {
+//            writeUtf8(txt)
+//        }
+//    }
+
     fun <E> write(
         tracklist: Tracklist<E>,
         serializer: KSerializer<E>,
+        templateFolder: Path = tracklist.exportPath,
         defaultTemplate: String = default,
         templateKey: String = "template",
     ) {
@@ -85,8 +134,8 @@ object Template {
 //        tracklist.tracks.forEach {
 //            println(it)
 //        }
-        val formatter = load(
-            dir = tracklist.exportPath,
+        val formatter = loadFormatter(
+            dir = templateFolder,
             defaultTemplate = defaultTemplate,
             templateKey = templateKey
         )
@@ -119,12 +168,12 @@ object Template {
 //        FileSystem.SYSTEM.write(jsonPath) {
 //            writeUtf8(jsonString)
 //        }
-        val keys = encodedSongs.first().keys
-        val values = encodedSongs.map {
-            it.entries.associate {
-                it.key to it.value.jsonPrimitive.contentOrNull
-            }
-        }
+//        val keys = encodedSongs.first().keys
+//        val values = encodedSongs.map {
+//            it.entries.associate {
+//                it.key to it.value.jsonPrimitive.contentOrNull
+//            }
+//        }
 //        val widths = keys.associateWith { key ->
 //            max(
 //                key.length,
@@ -157,20 +206,6 @@ object Template {
             ListSerializer(serializer), tracklist.tracks
         )
 
-//        val CSV_SEPARATOR = ","
-//        val csv = keys.joinToString(CSV_SEPARATOR, postfix = "\n") {
-//            if (it.contains(CSV_SEPARATOR)) {
-//                '"' + it + '"'
-//            } else it
-//        } + values.joinToString("\n") { obj ->
-//            obj.entries.joinToString(CSV_SEPARATOR) { (key, value) ->
-//                (value.orEmpty()).let {
-//                    if (it.contains(CSV_SEPARATOR)) {
-//                        '"' + it + '"'
-//                    } else it
-//                }
-//            }
-//        }
         val csvPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.csv"
         println("writing to $csvPath")
         FileSystem.SYSTEM.write(csvPath) {
@@ -183,6 +218,7 @@ object Template {
     fun <E> write(
         tracklists: List<Tracklist<E>>,
         serializer: KSerializer<E>,
+        openFolders: List<Path> = tracklists.map { it.exportPath },
         defaultTemplate: String = default,
         templateKey: String = "template",
     ) {
@@ -194,19 +230,54 @@ object Template {
                 templateKey = templateKey
             )
         }
-        tracklists
-            .map { it.exportPath }
+        openFolders
             .distinct()
             .forEach { path ->
-//                println("to open the folder: 'Y' or 'y; and ENTER to confirm")
-
-//                val line = readlnOrNull()
-//                if (line?.lowercase()?.trim()?.startsWith("y") ?: false) {
                 openFolder(path)
-//                } else {
-//
-//                }
             }
     }
+    fun <E> write(
+        tracklists: List<Tracklist<E>>,
+        serializer: KSerializer<E>,
+        templateFolder: Path,
+        openFolders: List<Path> = tracklists.map { it.exportPath },
+        defaultTemplate: String = default,
+        templateKey: String = "template",
+    ) {
+        tracklists.forEach { trackList ->
+            write(
+                tracklist = trackList,
+                serializer = serializer,
+                templateFolder = templateFolder,
+                defaultTemplate = defaultTemplate,
+                templateKey = templateKey
+            )
+        }
+        openFolders
+            .distinct()
+            .forEach { path ->
+                openFolder(path)
+            }
+    }
+
+//    suspend fun <E> write(
+//        tracklists: List<Tracklist<E>>,
+//        serializer: KSerializer<E>,
+//        openFolders: List<Path> = tracklists.map { it.exportPath },
+//
+//    ) {
+//        tracklists.forEach { trackList ->
+//            write(
+//                tracklist = trackList,
+//                serializer = serializer
+////                formatter = formatter,
+//            )
+//        }
+//        openFolders
+//            .distinct()
+//            .forEach { path ->
+//                openFolder(path)
+//            }
+//    }
 }
 

@@ -45,7 +45,7 @@ fun main(vararg args: String) {
 
     if (tracklist != null) {
 //        createTracklist(parsedHtml)
-        Template.write(
+        Exporter.write(
             tracklist.splitTracklists(
                 { it.time },
                 { track, diff ->

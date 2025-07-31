@@ -14,7 +14,6 @@ import okio.FileSystem
 import okio.Path.Companion.toPath
 import kotlin.system.exitProcess
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 val xmlLenient = XML {
@@ -130,16 +129,6 @@ fun parseNml(nmlPath: Path): Tracklist<Track>? {
 }
 
 fun main(vararg args: String) {
-    val epochDays = LocalDate(2024, 11, 19).toEpochDays()
-//    println(Int.MAX_VALUE)
-    println(epochDays)
-    val refEpoch = epochDays - 132647699
-    println(refEpoch)
-    println(refEpoch.days)
-    val date = LocalDate.fromEpochDays(refEpoch)
-    println(date)
-//    exitProcess(0)
-
     val documents = Command("powershell.exe")
         .args(
             "-Command",
@@ -242,7 +231,7 @@ fun main(vararg args: String) {
         }
     }.let {
 
-        Template.write(it, Track.serializer())
+        Exporter.write(it, Track.serializer())
     }
 
     println("")

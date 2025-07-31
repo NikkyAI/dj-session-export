@@ -208,7 +208,7 @@ fun main(vararg args: String) {
         ) { lastTrack, nextTrack -> lastTrack.endAt - nextTrack.startAt }
             ?: emptyList()
     }
-    Template.write(
+    Exporter.write(
         tracklists,
         SeratoTrack.serializer(),
         defaultTemplate = "{time} - {title}"

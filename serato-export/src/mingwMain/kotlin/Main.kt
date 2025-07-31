@@ -68,7 +68,7 @@ fun main(vararg args: String) {
             },
         ) ?: emptyList()
     }.let {
-        Template.write(
+        Exporter.write(
             it,
             HistoryTrack.serializer(),
         )

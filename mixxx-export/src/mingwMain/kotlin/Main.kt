@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalTime::class)
 
 import io.github.smyrgeorge.sqlx4k.Driver
-import io.github.smyrgeorge.sqlx4k.impl.extensions.asDoubleOrNull
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asFloatOrNull
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asInt
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asLong
@@ -9,14 +8,8 @@ import io.github.smyrgeorge.sqlx4k.sqlite.SQLite
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.toKString
 import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.format.DateTimeComponents
-import kotlinx.datetime.format.Padding
-import kotlinx.datetime.format.char
-import okio.FileSystem
 import okio.Path.Companion.toPath
 import platform.posix.getenv
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -120,7 +113,7 @@ fun main(vararg args: String) {
                 }
             ) { lastTrack, nextTrack -> nextTrack.time - lastTrack.time }
         }.let {tracklists ->
-            Template.write(
+            Exporter.write(
                 tracklists,
                 Song.serializer(),
             )

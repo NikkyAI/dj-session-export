@@ -250,7 +250,7 @@ fun main(vararg args: String) {
                 }
         )
         }.let { tracklists ->
-            Template.write(
+            Exporter.write(
                 tracklists,
                 Song.serializer(),
             )
