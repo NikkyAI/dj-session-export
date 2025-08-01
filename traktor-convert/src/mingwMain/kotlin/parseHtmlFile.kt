@@ -28,13 +28,13 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
         val document = Ksoup.parse(data)
         val h1 = document.selectFirst("h1")
         if (h1 == null) {
-            println("Title (h1) not found")
+            logger.info { "Title (h1) not found" }
             return null
         }
         val title = h1.text().trim().substringAfter("Track List: ")
         val table = document.selectFirst("table.border")
         if (table == null) {
-            println("Table not found")
+            logger.info { "Table not found" }
             return null
         }
 
@@ -50,7 +50,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
 
             if (index < 0) {
                 missingFields += fieldName
-//                    println("missing field $fieldName")
+//                    logger.info { "missing field $fieldName" }
 //                        error("missing field '$fieldName' \navailable fields: $headerCells")
 
             }
@@ -66,7 +66,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
             if (index < 0) {
                 missingOptionalFields += fieldName
                 return { null }
-//                    println("missing field $fieldName")
+//                    logger.info { "missing field $fieldName" }
 //                        error("missing field '$fieldName' \navailable fields: $headerCells")
 
             }
@@ -87,16 +87,16 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
 
 
         if (missingOptionalFields.isNotEmpty()) {
-            println("Missing optional fields:")
-            println(missingOptionalFields.joinToString { "'$it'" })
+            logger.info { "Missing optional fields:" }
+            logger.info { missingOptionalFields.joinToString { "'$it'" } }
         }
         if (missingFields.isNotEmpty()) {
-            println("Missing required fields:")
-            println(missingFields.joinToString { "'$it'" })
+            logger.info { "Missing required fields:" }
+            logger.info { missingFields.joinToString { "'$it'" } }
         }
         if (missingFields.isNotEmpty() || missingOptionalFields.isNotEmpty()) {
-            println("Available Fields:")
-            println(headerCells.joinToString { "'$it'" })
+            logger.info { "Available Fields:" }
+            logger.info { headerCells.joinToString { "'$it'" } }
 
         }
 
@@ -108,7 +108,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
         val referenceTimestamp = parseInstant(firstRow.startTimeField())
         for (i in 1 until rows.size) { // Skip the first row (header row)
             val cells = rows[i].select("td")
-//            println("parsing row: $cells")
+//            logger.info { "parsing row: $cells" }
             if (cells.size >= 10) {
                 val timestamp = parseInstant(cells.startTimeField())
                 tracks.add(
@@ -122,7 +122,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
                         duration = run {
                             val duration = cells.durationField()
 
-                            println("parsing duration: $duration")
+                            logger.info { "parsing duration: $duration" }
 
                             val localTime = LocalTime.Companion.parse("0h" + duration, durationFormat)
 //                            val localTime = LocalTime.parse(duration, durationFormat)
@@ -132,7 +132,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
                         key = cells.keyField()
                     )
 //                        .also {
-//                            println(it)
+//                            logger.info { it }
 //                        }
                 )
             }
@@ -146,7 +146,7 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
         //.sortedBy { it.trackNum }
 
     } catch (error: Exception) {
-        println("Error reading file: \n$error")
+        logger.info { "Error reading file: \n$error" }
 //        error.printStackTrace()
         null
     }

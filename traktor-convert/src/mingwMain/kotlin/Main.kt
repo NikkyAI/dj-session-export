@@ -34,12 +34,12 @@ fun main(vararg args: String) {
             FileSystem.SYSTEM.exists(it.toPath())
         }
         ?: run {
-            println("Enter the path to the HTML file: ")
+            logger.info { "Enter the path to the HTML file: " }
             print("> ")
             readlnOrNull()?.trim() ?: return
         }
-    println()
-    println("parsing $filePath")
+    logger.info {  }
+    logger.info { "parsing $filePath" }
 
     val tracklist = parseHtmlFile(filePath.toPath())
 
@@ -59,8 +59,8 @@ fun main(vararg args: String) {
         genreBreakdown(tracklist) { genre }
     }
 
-    println("")
-    println("PRESS ANY BUTTON TO CLOSE")
+
+    logger.info { "PRESS ANY BUTTON TO CLOSE" }
     readlnOrNull()
 }
 

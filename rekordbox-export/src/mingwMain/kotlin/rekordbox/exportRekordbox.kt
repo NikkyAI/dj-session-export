@@ -1,8 +1,16 @@
 @file:OptIn(ExperimentalTime::class)
 
+package rekordbox
+
+import Folders
+import Tracklist
+import com.github.ajalt.mordant.rendering.TextColors.*
 import com.kgit2.kommand.process.Command
 import com.kgit2.kommand.process.Stdio
-import io.github.smyrgeorge.sqlx4k.Driver
+import com.saveourtool.okio.pathString
+import genreBreakdown
+import getExportFolder
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asInt
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asIntOrNull
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asLong
@@ -16,18 +24,9 @@ import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.core.remaining
 import io.ktor.utils.io.exhausted
 import io.ktor.utils.io.readRemaining
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.toKString
-import kotlinx.coroutines.runBlocking
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.format
-import kotlinx.datetime.format.Padding
-import kotlinx.datetime.format.char
 import kotlinx.io.okio.asKotlinxIoRawSink
 import okio.FileSystem
-import okio.Path.Companion.toPath
-import platform.posix.getenv
-import kotlin.time.Duration
+import splitTracklists
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -35,39 +34,29 @@ val httpClient = HttpClient(WinHttp) {
 
 }
 
-val TMP = FileSystem.SYSTEM_TEMPORARY_DIRECTORY
 val FS = FileSystem.SYSTEM
 
-val outputTimestampFormat = LocalTime.Format {
-    hour(Padding.ZERO)
-    char(':')
-    minute(Padding.ZERO)
-    char(':')
-    second(Padding.ZERO)
+val encryptedPath = Folders.APPDATA / "Pioneer" / "rekordbox" / "master.db"
+
+fun canExportRekordbox(): Boolean {
+    return FileSystem.SYSTEM.exists(encryptedPath)
 }
 
-fun Duration.formatTimestamp(): String {
-    val localTime = LocalTime.fromSecondOfDay(inWholeSeconds.toInt())
-    return localTime.format(outputTimestampFormat)
-}
+suspend fun exportRekordbox() {
+    val logger = KotlinLogging.logger("exportRekordbox.kt")
 
-@OptIn(ExperimentalForeignApi::class)
-fun main(vararg args: String) {
+    val sqlCipherPath = Folders.TEMP / "sqlcipher.exe"
 
-    val sqlCipherPath = TMP / "rekordbox-export" / "sqlcipher.exe"
 
-    val appdata = getenv("APPDATA")?.toKString() ?: error("cannot lookup %APPDATA%")
-    val encryptedPath = appdata.toPath(true) / "Pioneer" / "rekordbox" / "master.db"
-
-    println(sqlCipherPath)
+    logger.info { sqlCipherPath }
 
     // downloading sqlcipher
-    runBlocking {
+    run {
         if (FS.exists(sqlCipherPath)) {
-            println("sqlcipher already downloaded")
-            return@runBlocking
+            logger.info { "sqlcipher already downloaded" }
+            return@run
         }
-        println("downloading sqlcipher")
+        logger.info { "downloading sqlcipher" }
 
         httpClient.prepareGet(urlString = "https://github.com/Katecca/sqlcipher-static-binary/raw/refs/heads/master/windows/x86_64/sqlcipher.exe")
             .execute { httpResponse ->
@@ -81,18 +70,21 @@ fun main(vararg args: String) {
                         count += chunk.remaining
 
                         chunk.transferTo(rawSink)
-                        println("Received $count bytes from ${httpResponse.contentLength()}")
+                        logger.info { "Received $count bytes from ${httpResponse.contentLength()}" }
                     }
                 }
             }
-        println("downloaded sqlcipher")
+        logger.info { "downloaded sqlcipher" }
     }
 
-    val dbPath = TMP / "rekordbox-export" / "plaintext.db"
+    val dbPath = Folders.TEMP / "rekordbox.sqlite"
     FS.delete(dbPath, mustExist = false)
+    dbPath.parent?.let {
+        FileSystem.SYSTEM.createDirectories(it)
+    }
 
     // decoding master.db
-    runBlocking {
+    run {
 
         val sqlLines = """
             PRAGMA key='402fd482c38817c35ffa8ffb8c7d93143b749e7d315df7a81732a1ff43608497';
@@ -102,8 +94,6 @@ fun main(vararg args: String) {
         """.trimIndent()
             .lines()
             .filter { it.isNotBlank() }
-//        val sqlQuoted = sqlLines
-//            .joinToString(" ", "\"", "\"")
         val sql = sqlLines
             .joinToString(" ")
 
@@ -111,41 +101,27 @@ fun main(vararg args: String) {
             sqlCipherPath.toString()
         )
             .args(
-                listOf(
-                    encryptedPath.toString(),
-//                    sql
-                )
+                encryptedPath.toString(),
+                sql
             )
             .also {
-                println(it.debugString())
+                logger.info { it.debugString() }
             }
-            .stdin(Stdio.Pipe)
+//            .stdin(Stdio.Pipe)
             .stdout(Stdio.Inherit)
             .spawn()
-            .apply {
-                bufferedStdin()?.let { writer ->
-                    sqlLines.forEach {
-                        writer.writeLine(it)
-                    }
-                }
-            }
+//            .apply {
+//                bufferedStdin()?.let { writer ->
+//                    sqlLines.forEach {
+//                        logger.info { it }
+//                        writer.writeLine(it)
+//                    }
+//                }
+//            }
             .wait()
-
-//        val response = executeCommandAndCaptureOutput(
-//            listOf(
-//                sqlCipherPath.toString(),
-//                encryptedPath.toString(),
-//                sql
-//            )
-//        )
-//
-//        println(response)
     }
 
-    // Additionally, you can set minConnections, acquireTimeout, idleTimeout, etc.
-    val options = Driver.Pool.Options.builder()
-        .maxConnections(10)
-        .build()
+    logger.info { "opening ${blue(dbPath.pathString)}" }
 
     /**
      * The following urls are supported:
@@ -156,15 +132,11 @@ fun main(vararg args: String) {
      * `sqlite://data.db?mode=ro`   | Open the file `data.db` for read-only access.
      */
     val db = SQLite(
-        url = "sqlite://$dbPath", // If the `test.db` file is not found, a new db will be created.
-        options = options
+        url = "sqlite://$dbPath?mode=ro",
     )
 
-//    println(Clock.System.now().format(sqliteDatetimeFormat))
-
-    runBlocking {
-
-//        db.execute("PRAGMA key = '402fd482c38817c35ffa8ffb8c7d93143b749e7d315df7a81732a1ff43608497'")
+    try {
+        logger.info { "getting tracklists" }
         val tracklists = db.fetchAll(
             """
                 SELECT h.Name        AS HistoryName,
@@ -248,16 +220,15 @@ fun main(vararg args: String) {
                         position = i+1,
                     )
                 }
-        )
+            )
         }.let { tracklists ->
             Exporter.write(
                 tracklists,
                 Song.serializer(),
             )
         }
-
-        println("")
-        println("PRESS ANY BUTTON TO CLOSE")
-        readlnOrNull()
+    } finally {
+        logger.info { "closing ${blue(dbPath.pathString)}" }
+        db.close()
     }
 }

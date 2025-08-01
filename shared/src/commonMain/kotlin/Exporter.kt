@@ -1,9 +1,12 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
 import app.softwork.serialization.csv.CSVFormat
+import com.github.ajalt.mordant.rendering.TextColors
 import com.kgit2.kommand.process.Command
 import com.kgit2.kommand.process.Stdio
+import com.saveourtool.okio.pathString
 import com.saveourtool.okio.safeToRealPath
+import io.github.oshai.kotlinlogging.KotlinLogging
 //import korlibs.template.KorteAutoEscapeMode
 //import korlibs.template.KorteTemplate
 //import korlibs.template.KorteTemplateConfig
@@ -18,27 +21,30 @@ import kotlinx.serialization.json.jsonPrimitive
 import okio.FileSystem
 import okio.Path
 
-fun openFolder(path: Path) {
-    println("opening $path")
-    try {
-        Command("powershell.exe")
-            .args(
-                "-Command",
-                "Invoke-Item",
-                "'$path'",
-            )
-            .stdout(Stdio.Inherit)
-            .spawn()
-            .wait()
-    } catch (e: Exception) {
-        println(e.message)
-    }
-}
 
 object Exporter {
+    private val logger = KotlinLogging.logger("Exporter.kt")
+
     val default = """
         {time} {artist} - {title}
     """.trimIndent().trim()
+
+    fun openFolder(path: Path) {
+        logger.info { "ii ${TextColors.blue(path.pathString)}" }
+        try {
+            Command("powershell.exe")
+                .args(
+                    "-Command",
+                    "Invoke-Item",
+                    "'$path'",
+                )
+                .stdout(Stdio.Inherit)
+                .spawn()
+                .wait()
+        } catch (e: Exception) {
+            logger.info { e.message }
+        }
+    }
 
     private fun loadFormatter(
         dir: Path,
@@ -71,12 +77,12 @@ object Exporter {
 ////        defaultTemplate: String = default,
 //    ) {
 //        if (tracklist.tracks.isEmpty()) {
-//            println("tracklist ${tracklist.title} was empty")
+//            logger.info { "tracklist ${tracklist.title} was empty" }
 //            return
 //        }
-//        println("writing ${tracklist.title}")
+//        logger.info { "writing ${tracklist.title}" }
 //        if (!FileSystem.SYSTEM.exists(tracklist.exportPath.safeToRealPath())) {
-//            println("creating ${tracklist.exportPath}")
+//            logger.info { "creating ${tracklist.exportPath}" }
 //            FileSystem.SYSTEM.createDirectories(
 //                tracklist.exportPath.safeToRealPath()
 //            )
@@ -107,7 +113,7 @@ object Exporter {
 //            }
 //            .joinToString("\n")
 //        val txtPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.new.txt"
-//        println("writing to $txtPath")
+//        logger.info { "writing to $txtPath" }
 //        FileSystem.SYSTEM.write(txtPath) {
 //            writeUtf8(txt)
 //        }
@@ -121,18 +127,18 @@ object Exporter {
         templateKey: String = "template",
     ) {
         if (tracklist.tracks.isEmpty()) {
-            println("tracklist ${tracklist.title} was empty")
+            logger.info { "tracklist ${TextColors.brightGreen(tracklist.title)} was empty" }
             return
         }
-        println("writing ${tracklist.title}")
+        logger.info { "writing ${TextColors.brightGreen(tracklist.title)}" }
         if (!FileSystem.SYSTEM.exists(tracklist.exportPath.safeToRealPath())) {
-            println("creating ${tracklist.exportPath}")
+            logger.info { "creating ${tracklist.exportPath}" }
             FileSystem.SYSTEM.createDirectories(
                 tracklist.exportPath.safeToRealPath()
             )
         }
 //        tracklist.tracks.forEach {
-//            println(it)
+//            logger.info { it }
 //        }
         val formatter = loadFormatter(
             dir = templateFolder,
@@ -145,7 +151,7 @@ object Exporter {
                     it.jsonObject
                 }
 //        val jsonString = json.encodeToString(ListSerializer(elementSerializer = serializer), value = tracklist.tracks)
-//        println(jsonString)
+//        logger.info { jsonString }
 //        val encodedSongs = json.decodeFromString(
 //            ListSerializer(JsonObject.serializer()),
 //            jsonString
@@ -157,14 +163,14 @@ object Exporter {
                 formatter(it)
             }
         val txtPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.txt"
-        println("writing to $txtPath")
+        logger.info { "writing to ${TextColors.blue(txtPath.pathString)}" }
         FileSystem.SYSTEM.write(txtPath) {
             writeUtf8(txt)
         }
 //        val debugPath = ".out".toPath()
 //        FileSystem.SYSTEM.createDirectories(debugPath)
 //        val jsonPath = debugPath / ("${basename}.json").toPath()
-//        println("writing to $jsonPath")
+//        logger.info { "writing to $jsonPath" }
 //        FileSystem.SYSTEM.write(jsonPath) {
 //            writeUtf8(jsonString)
 //        }
@@ -191,7 +197,7 @@ object Exporter {
 //            }
 //
 //        val mdPath = "${basename}.md".toPath()
-//        println("writing to $mdPath")
+//        logger.info { "writing to $mdPath" }
 //        FileSystem.SYSTEM.write(mdPath) {
 //            writeUtf8(md)
 //        }
@@ -207,11 +213,11 @@ object Exporter {
         )
 
         val csvPath = tracklist.exportPath.safeToRealPath() / "${tracklist.title}.csv"
-        println("writing to $csvPath")
+        logger.info { "writing to ${TextColors.blue(csvPath.pathString)}" }
         FileSystem.SYSTEM.write(csvPath) {
             writeUtf8(csv)
         }
-        println("\n")
+        println()
     }
 
 

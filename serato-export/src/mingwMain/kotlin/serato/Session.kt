@@ -1,3 +1,5 @@
+package serato
+
 import kotlin.time.Instant
 
 data class Session(

@@ -1,3 +1,4 @@
+import io.github.oshai.kotlinlogging.KotlinLogging
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import kotlin.math.max
@@ -6,15 +7,15 @@ fun <E> genreBreakdown(
     tracklist: Tracklist<E>,
     getGenre: E.() -> String?
 ) {
+    val logger = KotlinLogging.logger("genreBreakdown")
     if(tracklist.tracks.all { it.getGenre() == null }) return
 
     val genreCount = tracklist.tracks.groupingBy { it.getGenre() }.eachCount()
-    println("")
-    println(tracklist.title)
-    println("GENRES: ")
+    logger.info { tracklist.title }
+    logger.info { "GENRES: " }
     genreCount.entries.sortedByDescending { it.value }
         .forEach {
-            println("${it.value} x ${it.key}")
+            logger.info { "${it.value} x ${it.key}" }
         }
 
     val keys = setOf("Genre", "Tracks")
@@ -39,7 +40,7 @@ fun <E> genreBreakdown(
                 }
 
     val mdPath = "${tracklist.title}.genres.md".toPath()
-    println("writing to $mdPath")
+    logger.info { "writing to $mdPath" }
     FileSystem.SYSTEM.write(mdPath) {
         writeUtf8(md)
     }

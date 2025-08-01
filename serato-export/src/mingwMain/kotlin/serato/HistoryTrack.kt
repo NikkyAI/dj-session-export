@@ -1,3 +1,5 @@
+package serato
+
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 import kotlin.time.Instant

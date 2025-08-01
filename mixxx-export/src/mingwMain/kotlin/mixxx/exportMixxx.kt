@@ -1,29 +1,35 @@
 @file:OptIn(ExperimentalTime::class)
 
+package mixxx
+
+import Tracklist
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.saveourtool.okio.pathString
+import genreBreakdown
+import getExportFolder
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.github.smyrgeorge.sqlx4k.Driver
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asFloatOrNull
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asInt
 import io.github.smyrgeorge.sqlx4k.impl.extensions.asLong
 import io.github.smyrgeorge.sqlx4k.sqlite.SQLite
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.toKString
-import kotlinx.coroutines.runBlocking
-import okio.Path.Companion.toPath
-import platform.posix.getenv
+import okio.FileSystem
+import splitTracklists
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
+val dbPath = Folders.LOCAL_APPDATA / "Mixxx" / "mixxxdb.sqlite"
+
+fun canExportMixxx(): Boolean {
+    return FileSystem.SYSTEM.exists(dbPath)
+}
 
 @OptIn(ExperimentalForeignApi::class)
-fun main(vararg args: String) {
+suspend fun exportMixxx() {
+    val logger = KotlinLogging.logger("exportMixxx.kt")
 
-    val appdata = getenv("LOCALAPPDATA")?.toKString() ?: error("cannot lookup %APPDATA%")
-    val dbPath = appdata.toPath(true) / "Mixxx" / "mixxxdb.sqlite"
-
-    // Additionally, you can set minConnections, acquireTimeout, idleTimeout, etc.
-    val options = Driver.Pool.Options.builder()
-        .maxConnections(10)
-        .build()
+    logger.info { "opening ${blue(dbPath.pathString)}" }
 
     /**
      * The following urls are supported:
@@ -34,13 +40,10 @@ fun main(vararg args: String) {
      * `sqlite://data.db?mode=ro`   | Open the file `data.db` for read-only access.
      */
     val db = SQLite(
-        url = "sqlite://$dbPath", // If the `test.db` file is not found, a new db will be created.
-        options = options
+        url = "sqlite://$dbPath?mode=ro",
     )
 
-//    println(Clock.System.now().format(sqliteDatetimeFormat))
-
-    runBlocking {
+    try {
 
 //        db.execute("PRAGMA key = '402fd482c38817c35ffa8ffb8c7d93143b749e7d315df7a81732a1ff43608497'")
         val tracklists = db.fetchAll(
@@ -49,7 +52,6 @@ fun main(vararg args: String) {
                        p.Name                          AS playlistName,
                        pt.position                     AS position,
                        unixepoch(pt.pl_datetime_added) AS start,
-                       l.duration                      AS duration,
                        l.title                         AS title,
                        l.artist                        AS artist,
                        l.album                         AS album,
@@ -74,7 +76,11 @@ fun main(vararg args: String) {
                     Instant.fromEpochSeconds(it)
                 }
                 Tracklist(
-                    title = playlistName,
+                    title = playlistName
+                        .replace("/", "_")
+                        .replace("\\", "_")
+                        .replace(";", "-")
+                        .replace(":", "-"),
                     exportPath = getExportFolder() / "Mixxx",
                     tracks = rows.map { songRow ->
                         val timestamp = songRow.get("start").asLong().let {
@@ -84,9 +90,6 @@ fun main(vararg args: String) {
                             position = songRow.get("position").asInt(),
                             time = (timestamp - referenceTimestamp),
                             startAt = timestamp,
-//                            duration = songRow.get("duration").asDoubleOrNull()
-//                                ?.takeUnless { it == 0.0 }
-//                                ?.seconds,
                             title = songRow.get("title").asString(),
                             artist = songRow.get("artist").asStringOrNull(),
                             album = songRow.get("album").asStringOrNull(),
@@ -119,9 +122,8 @@ fun main(vararg args: String) {
             )
 //            genreBreakdown(tracklist) { genre }
         }
-
-        println("")
-        println("PRESS ANY BUTTON TO CLOSE")
-        readlnOrNull()
+    } finally {
+        logger.info { "closing ${blue(dbPath.pathString)}" }
+        db.close()
     }
 }

@@ -5,7 +5,11 @@ import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.get
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinNativeBinaryContainer
+import org.jetbrains.kotlin.gradle.targets.js.toHex
 import kotlin.plus
+import kotlin.random.Random
+import kotlin.random.nextUBytes
 
 @Suppress("unused")
 class MultiplatformBinariesConventions : Plugin<Project> {
@@ -24,26 +28,26 @@ class MultiplatformBinariesConventions : Plugin<Project> {
                 Pair("mingwX64") {
                     mingwX64 {
                         binaries {
-                            executable() {
-                                entryPoint = "main"
-                                if (System.getenv("CI") == null) {
-                                    baseName = project.name + "-dev"
-                                }
-                                runTaskProvider?.configure {
-                                    val args = project.providers.gradleProperty("runArgs")
-                                    workingDir = project.file("run").also { it.mkdirs() }
-                                    argumentProviders.add {
-                                        args.orNull?.let { listOf(it) } ?: emptyList()
-                                    }
-                                }
-                                linkerOpts += listOf("-Wl,--allow-multiple-definition")
-                            }
+//                            executable() {
+//                                entryPoint = "main"
+//                                if (System.getenv("CI") == null) {
+//                                    baseName = project.name + "-dev"
+//                                }
+//                                runTaskProvider?.configure {
+//                                    val args = project.providers.gradleProperty("runArgs")
+//                                    workingDir = project.file("run").also { it.mkdirs() }
+//                                    argumentProviders.add {
+//                                        args.orNull?.let { listOf(it) } ?: emptyList()
+//                                    }
+//                                }
+//                                linkerOpts += listOf("-Wl,--allow-multiple-definition")
+//                            }
                         }
                     }
                 },
             )
 
-//            println("Enabling target jvm")
+//            logger.info { "Enabling target jvm" }
 //            jvm {
 //                @OptIn(ExperimentalKotlinGradlePluginApi::class)
 //                mainRun {
@@ -56,7 +60,34 @@ class MultiplatformBinariesConventions : Plugin<Project> {
                 availableTargets[it]?.invoke()
             }
 
+            jvmToolchain(21)
+            compilerOptions {
+                optIn.add("kotlin.time.ExperimentalTime")
+            }
+
             applyDefaultHierarchyTemplate()
         }
+    }
+}
+
+@OptIn(ExperimentalUnsignedTypes::class)
+fun KotlinNativeBinaryContainer.executable(
+    entrypoint: String = "main",
+    linkerOptions: List<String> = listOf("-Wl,--allow-multiple-definition")
+) {
+    executable() {
+        entryPoint = entrypoint
+        if (System.getenv("CI") == null) {
+            baseName = project.name + "-" + Random.nextUBytes(4).joinToString("") { it.toString(16) }
+            println("baseName: $baseName")
+        }
+        runTaskProvider?.configure {
+            val args = project.providers.gradleProperty("runArgs")
+            workingDir = project.file("run").also { it.mkdirs() }
+            argumentProviders.add {
+                args.orNull?.let { listOf(it) } ?: emptyList()
+            }
+        }
+        linkerOpts += linkerOptions
     }
 }

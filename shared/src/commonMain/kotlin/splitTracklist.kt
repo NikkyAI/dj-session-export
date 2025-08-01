@@ -50,11 +50,11 @@ fun <E : Any> Tracklist<E>.splitTracklists(
                     subtractTime(it, start)
                 }
 //                .also {
-//                    println()
+//                    logger.info {  }
 //                    it.forEach {
-//                        println(it)
+//                        logger.info { it }
 //                    }
-//                    println()
+//                    logger.info {  }
 //                }
 
             tracklists.add(

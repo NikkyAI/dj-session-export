@@ -1,22 +1,23 @@
+package virtualdj
+
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
-import kotlin.time.Instant
 
 @Serializable
-data class Song(
+data class Track(
     val position: Int,
     @Serializable(with=DurationSerializer::class)
     val time: Duration,
-    @Serializable(with=InstantSerializer::class)
-    val startAt: Instant,
+//    @Serializable(with=InstantSerializer::class)
+//    val timestamp: Instant,
 //    @Serializable(with=DurationSerializer::class)
 //    val duration: Duration?,
+    val artist: String,
     val title: String,
-    val artist: String?,
-    val label: String?,
-    val album: String?,
-    val genre: String?,
-    val year: Int?,
-    val bpm: Float,
-    val scale: String?,
+//    val album: String?,
+//    val year: String?,
+//    val genre: String?,
+//    val bpm: Float?,
+//    val key: String?,
 )
+

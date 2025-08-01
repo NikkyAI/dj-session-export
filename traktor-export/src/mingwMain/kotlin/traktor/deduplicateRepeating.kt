@@ -1,3 +1,5 @@
+package traktor
+
 fun String.deduplicateRepeating(separator: String = " "): String {
     (2..length - 1).forEach { i ->
         val candidate = substring(0, i)

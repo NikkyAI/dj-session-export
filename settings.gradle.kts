@@ -14,13 +14,16 @@ plugins {
     id("de.fayard.refreshVersions") version "0.60.5"
 }
 
-rootProject.name = "dj-session-export"
+rootProject.name = "dj-session-export-root"
 
 include("shared")
+
 include("traktor-convert")
-include("traktor-export")
 include("serato-convert")
+
+include("traktor-export")
 include("serato-export")
 include("rekordbox-export")
 include("mixxx-export")
 include("virtualdj-export")
+include("dj-session-export")

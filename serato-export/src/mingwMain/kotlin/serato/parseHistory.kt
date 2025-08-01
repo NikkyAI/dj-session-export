@@ -1,29 +1,31 @@
+package serato
+
 import com.fleeksoft.charset.Charsets
 import com.fleeksoft.io.ByteBuffer
 import com.fleeksoft.io.ByteBufferFactory
+import com.github.ajalt.mordant.rendering.TextColors.*
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.toKString
 import okio.FileSystem
 import okio.Path
-import okio.Path.Companion.toPath
-import okio.buffer
-import okio.use
-import platform.posix.getenv
+import kotlin.collections.iterator
 import kotlin.time.Instant
 
 fun parseChunk(buffer: ByteBuffer, index: Int): Pair<Chunk, Int> {
+    val logger = KotlinLogging.logger("parseChunk")
     val tag = run {
         val arr = ByteArray(4)
         buffer
             .position(index)
             .get(arr, 0, 4)
-//        println(arr.toHexString()
+        logger.trace { "tag: " + arr.toHexString() }
         arr.map {
             it.toInt().toChar()
         }.joinToString("")
     }
     val length = buffer.getInt(index + 4)
-    println("length: $length")
+    logger.trace { "tag: $tag" }
+    logger.trace { "length: $length" }
     val data: Chunk = when (tag) {
         "oses", "oent", "otrk", "adat" -> {
             Chunk.Chunks(
@@ -67,13 +69,14 @@ fun parseChunk(buffer: ByteBuffer, index: Int): Pair<Chunk, Int> {
 
 
 fun parseChunkArray(buffer: ByteBuffer, start: Int, end: Int): List<Chunk> {
-//    println(buffer.array().toHexString())
-//    println("start: $start")
-//    println("end: $end")
+    val logger = KotlinLogging.logger("parseChunkArray")
+    logger.trace { buffer.array().toHexString() }
+    logger.trace { "start: $start" }
+    logger.trace { "end: $end" }
     val chunks = mutableListOf<Chunk>()
     var cursor = start
     while (cursor < end) {
-//        println("cursor: $cursor")
+        logger.trace { "cursor: $cursor" }
         val (chunk, newIndex) = parseChunk(buffer, cursor)
         cursor = newIndex
         chunks.add(chunk)
@@ -81,36 +84,8 @@ fun parseChunkArray(buffer: ByteBuffer, start: Int, end: Int): List<Chunk> {
     return chunks
 }
 
-fun getSessions(path: Path): Map<Int, String> {
-    println("getSessions")
-    val sessions = mutableMapOf<Int, String>()
-    val buffer = FileSystem.SYSTEM.read(path) {
-        ByteBufferFactory.wrap(readByteArray())
-    }
-    val chunks = parseChunkArray(buffer, 0, buffer.limit())
-
-    chunks.forEach { chunk ->
-        if (chunk.tag == "oses" && chunk is Chunk.Chunks) {
-            val adatChunk = chunk.data[0] as Chunk.Chunks
-            if (adatChunk.tag == "adat") {
-                var date = ""
-                var index = -1
-                adatChunk.data.forEach { subChunk ->
-                    when (subChunk.tag) {
-                        "\u0000\u0000\u0000\u0001" -> index = (subChunk as Chunk.IntData).data as Int
-                        "\u0000\u0000\u0000)" -> date = (subChunk as Chunk.StringData).data
-                    }
-                }
-                println("SESSION $date $index")
-                sessions[index] = date
-            }
-        }
-    }
-    return sessions
-}
-
 fun getSessionSongs(path: Path): List<Session.HistorySong> {
-    println("getSessionSongs")
+    val logger = KotlinLogging.logger("getSessionSongs")
     val buffer = FileSystem.SYSTEM.read(path) {
         ByteBufferFactory.wrap(readByteArray())
     }
@@ -138,6 +113,7 @@ fun getSessionSongs(path: Path): List<Session.HistorySong> {
                         "\u0000\u0000\u00005" -> timePlayed = (subChunk as Chunk.Date).data
                     }
                 }
+                logger.debug { "song ${cyan(title)} ${cyan(artist)} ${blue(filePath)} " }
                 songs.add(
                     Session.HistorySong(
                         playedAt = timePlayed!!,
@@ -153,6 +129,35 @@ fun getSessionSongs(path: Path): List<Session.HistorySong> {
     return songs
 }
 
+fun getSessions(path: Path): Map<Int, String> {
+    val logger = KotlinLogging.logger("getSessions")
+//    logger.info { "getSessions" }
+    val sessions = mutableMapOf<Int, String>()
+    val buffer = FileSystem.Companion.SYSTEM.read(path) {
+        ByteBufferFactory.wrap(readByteArray())
+    }
+    val chunks = parseChunkArray(buffer, 0, buffer.limit())
+
+    chunks.forEach { chunk ->
+        if (chunk.tag == "oses" && chunk is Chunk.Chunks) {
+            val adatChunk = chunk.data[0] as Chunk.Chunks
+            if (adatChunk.tag == "adat") {
+                var date = ""
+                var index = -1
+                adatChunk.data.forEach { subChunk ->
+                    when (subChunk.tag) {
+                        "\u0000\u0000\u0000\u0001" -> index = (subChunk as Chunk.IntData).data
+                        "\u0000\u0000\u0000)" -> date = (subChunk as Chunk.StringData).data
+                    }
+                }
+                logger.debug { "session ${brightGreen(date)} index: $index" }
+                sessions[index] = date
+            }
+        }
+    }
+    return sessions
+}
+
 fun getSeratoHistory(seratoPath: Path = defaultSeratoPath): List<Session> {
     val sessions = getSessions(seratoPath / "History/history.database")
     val result = mutableListOf<Session>()
@@ -165,33 +170,29 @@ fun getSeratoHistory(seratoPath: Path = defaultSeratoPath): List<Session> {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-val defaultSeratoPath: Path
-    get() {
-        val homepath = getenv("USERPROFILE")?.toKString() ?: error("failed to get %USERPROFILE%")
-        return homepath.toPath() / "Music/_Serato_/"
-    }
+val defaultSeratoPath: Path = Folders.USERPROFILE / "Music" / "_Serato_"
 
 fun ByteBuffer.getInt(index: Int): Int {
     val byteArray = ByteArray(4)
-//    println("remaining: ${remaining()}")
+//    logger.info { "remaining: ${remaining()}" }
     position(index).get(byteArray, 0, 4)
     return byteArrayToInt(byteArray).also {
-//        println("parsed int: $it")
+//        logger.info { "parsed int: $it" }
     }
 }
 
 fun ByteBuffer.getLong(index: Int): Long {
     val byteArray = ByteArray(8)
-//    println("remaining: ${remaining()}")
+//    logger.info { "remaining: ${remaining()}" }
     position(index).get(byteArray, 0, 8)
     return byteArrayToLong(byteArray).also {
-//        println("parsed int: $it")
+//        logger.info { "parsed int: $it" }
     }
 }
 
 fun byteArrayToInt(byteArray: ByteArray): Int {
     var result = 0
-    println(byteArray.toHexString())
+//    logger.info { byteArray.toHexString() }
     for (i in byteArray.indices) {
         result = result or (byteArray[i].toInt() and 0xFF shl (8 * (byteArray.size - 1 - i)))
     }
@@ -199,7 +200,7 @@ fun byteArrayToInt(byteArray: ByteArray): Int {
 }
 fun byteArrayToLong(byteArray: ByteArray): Long {
     var result = 0L
-    println(byteArray.toHexString())
+//    logger.info { byteArray.toHexString() }
     for (i in byteArray.indices) {
         result = result or (byteArray[i].toLong() and 0xFF shl (8 * (byteArray.size - 1 - i)))
     }

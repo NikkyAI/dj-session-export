@@ -63,7 +63,7 @@ fun parseFLF(filePath: Path): List<SeratoExport> {
         }
         .filter { it.isNotBlank() }
         .map { line ->
-            println(line)
+            logger.info { line }
             val flf = FixedLengthFormat.decodeFromString(SeratoExportFLF.serializer(), line.take(156))
             SeratoExport(
                 name = flf.name.trim(),
@@ -73,7 +73,7 @@ fun parseFLF(filePath: Path): List<SeratoExport> {
                 deck = flf.deck.trim(),
                 notes = line.drop(156).trim()
             ).also {
-                println(it)
+                logger.info { it }
             }
         }
     return data
@@ -148,15 +148,16 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
             tracks = tracks
         )
     } catch (error: Exception) {
-        println("Error reading file: \n$error")
+        logger.info { "Error reading file: \n$error" }
         error.printStackTrace()
         null
     }
 }
 
 fun main(vararg args: String) {
+    configureLogging()
 //    val documents = executeCommand("powershell.exe -Command [Environment]::GetFolderPath('MyDocuments')")
-//    println(documents)
+//    logger.info { documents }
 
     val args = args
         .toList()
@@ -177,15 +178,15 @@ fun main(vararg args: String) {
                 FileSystem.SYSTEM.exists(it.toPath())
             }?.takeUnless { it.isEmpty() }
         ?: run {
-            println("Enter the path to the csv file: ")
+            logger.info { "Enter the path to the csv file: " }
             print("> ")
             listOf(readlnOrNull()?.trim() ?: return)
         }
-    println("parsing $args")
+    logger.info { "parsing $args" }
     val tracklists = args.flatMap { filePath ->
 
-        println()
-        println("parsing $filePath")
+        logger.info {  }
+        logger.info { "parsing $filePath" }
 
         val data = if (filePath.endsWith(".csv")) {
             parseCSV(filePath.toPath())
@@ -213,8 +214,8 @@ fun main(vararg args: String) {
         SeratoTrack.serializer(),
         defaultTemplate = "{time} - {title}"
     )
-    println("")
-    println("PRESS ANY BUTTON TO CLOSE")
+
+    logger.info { "PRESS ANY BUTTON TO CLOSE" }
     readlnOrNull()
 }
 
