@@ -1,6 +1,7 @@
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.select.Elements
 import com.saveourtool.okio.safeToRealPath
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.format.Padding
 import kotlinx.datetime.format.char
@@ -20,6 +21,7 @@ val durationFormat = LocalTime.Companion.Format {
 }
 
 fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
+    val logger = KotlinLogging.logger("parseHtmlFile")
     return try {
         val data = FileSystem.Companion.SYSTEM.read(filePath) {
             readUtf8()

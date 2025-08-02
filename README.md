@@ -20,22 +20,28 @@ default:
 
 # Tools
 
+## Exporter
 
-## [traktor](./traktor-export/README.md)
+[Download exporter](https://github.com/NikkyAI/dj-session-export/releases/download/nightly/dj-session-export.exe)
 
-Exporter for Traktor History (reading `nml` files)
+all the tools listed below bundled together
 
-## [serato](./serato-export/README.md)
 
-Exporter for Serato History
+## [mixxx](./mixxx-export/README.md)
+
+Exporter for sessions from the Mixxx database
 
 ## [rekordbox](./rekordbox-export/README.md)
 
 Exporter for sessions from the rekordbox database
 
-## [mixxx](./mixxx-export/README.md)
+## [serato](./serato-export/README.md)
 
-Exporter for sessions from the Mixxx database
+Exporter for Serato History
+
+## [traktor](./traktor-export/README.md)
+
+Exporter for Traktor History (reading `nml` files)
 
 ## [virtualdj](./virtualdj-export/README.md)
 

@@ -6,7 +6,7 @@ import kotlin.time.Duration
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-data class SeratoExport(
+data class SeratoExportFLF(
     @FixedLength(84)
     val name: String,
     @FixedLength(25)
@@ -20,5 +20,4 @@ data class SeratoExport(
     val playtime: Duration,
     @FixedLength(9)
     val deck: String,
-    val notes: String,
 )

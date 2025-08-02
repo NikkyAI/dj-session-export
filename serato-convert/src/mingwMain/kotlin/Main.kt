@@ -111,7 +111,7 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
                 LocalTime.parse(it.endTime, timeFormat)
             ).toInstant(TimeZone.currentSystemDefault())
             Triple(it, startTime, endTime)
-//            SeratoTrack(
+//            .SeratoTrack(
 //                time = (startTime - referenceInstant).formatTimestamp(),
 //                title = it.name,
 //                startTime = startTime,
