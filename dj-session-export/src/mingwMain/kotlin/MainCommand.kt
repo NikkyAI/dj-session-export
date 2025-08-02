@@ -38,7 +38,8 @@ class MainCommand(
 
         if(canExportMixxx()) {
             exportMixxx()
-        } else if (rekordbox.canExportRekordbox()) {
+        }
+        if (rekordbox.canExportRekordbox()) {
             rekordbox.exportRekordbox()
         }
         if(canExportSerato()) {

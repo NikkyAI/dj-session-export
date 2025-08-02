@@ -27,4 +27,19 @@ object Folders {
             ?.toPath()
             ?: error("failed to get documents folder location using powershell")
     }
+
+    val userMusic by lazy {
+        Command("powershell.exe")
+            .args(
+                "-Command",
+                "[Environment]::GetFolderPath('MyMusic')"
+            )
+            .stdout(Stdio.Pipe)
+            .spawn()
+            .waitWithOutput()
+            .stdout
+            ?.trim()
+            ?.toPath()
+            ?: error("failed to get documents folder location using powershell")
+    }
 }

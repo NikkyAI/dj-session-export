@@ -15,7 +15,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":shared"))
-//            implementation(project(":updater"))
             implementation(project(":mixxx-export"))
             implementation(project(":rekordbox-export"))
             implementation(project(":traktor-export"))
