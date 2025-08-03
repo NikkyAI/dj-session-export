@@ -1,3 +1,6 @@
+import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.OverflowWrap
+import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.terminal.Terminal
 import io.github.oshai.kotlinlogging.Appender
 import io.github.oshai.kotlinlogging.ConsoleOutputAppender
@@ -26,6 +29,9 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextStyle
+import com.github.ajalt.mordant.rendering.Whitespace
+import platform.windows.ANSI_NULL
 
 private val logChannel: Channel<Pair<KLoggingEvent, String>> = Channel()
 private val loggingScope = CoroutineScope(CoroutineName("log-writer"))
@@ -105,11 +111,19 @@ suspend fun configureLogging() {
 
     }
 
+    val plainTerminal = Terminal(AnsiLevel.NONE)
+
     KotlinLoggingConfiguration.appender = object : Appender {
         override fun log(loggingEvent: KLoggingEvent) {
             terminalAppender.log(
                 loggingEvent = loggingEvent
             )
+            val loggingEvent = loggingEvent.copy(
+                message = plainTerminal.render(
+                    message = loggingEvent.message,
+                    whitespace = Whitespace.NOWRAP,
+                    width = 150
+                ))
             KotlinLoggingConfiguration.formatter.formatMessage(loggingEvent).let {
                 logChannel.trySendBlocking(loggingEvent to it)
 //                logFormattedMessage(loggingEvent, it)
