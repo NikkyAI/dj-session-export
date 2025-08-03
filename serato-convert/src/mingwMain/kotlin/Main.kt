@@ -1,6 +1,8 @@
 import app.softwork.serialization.csv.CSVFormat
 import app.softwork.serialization.flf.FixedLengthFormat
 import com.saveourtool.okio.safeToRealPath
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalDate
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
@@ -14,6 +16,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import okio.Path
 import okio.FileSystem
 import okio.Path.Companion.toPath
+
+private val logger = KotlinLogging.logger("SeratoMain")
 
 val dateFormat = LocalDate.Format {
     monthNumber(padding = Padding.NONE)
@@ -154,7 +158,7 @@ fun trackListFrom(filePath: Path, data: List<SeratoExport>): Tracklist<SeratoTra
     }
 }
 
-fun main(vararg args: String) {
+fun main(vararg args: String): Unit = runBlocking {
     configureLogging()
 //    val documents = executeCommand("powershell.exe -Command [Environment]::GetFolderPath('MyDocuments')")
 //    logger.info { documents }
@@ -180,7 +184,7 @@ fun main(vararg args: String) {
         ?: run {
             logger.info { "Enter the path to the csv file: " }
             print("> ")
-            listOf(readlnOrNull()?.trim() ?: return)
+            listOf(readlnOrNull()?.trim() ?: return@runBlocking)
         }
     logger.info { "parsing $args" }
     val tracklists = args.flatMap { filePath ->

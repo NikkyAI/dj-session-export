@@ -1,3 +1,4 @@
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -29,6 +30,7 @@ fun parseInstant(startTimeString: String): Instant {
 }
 
 fun main(vararg args: String) {
+    val logger = KotlinLogging.logger("TraktoMain")
     val filePath = args.getOrNull(0)
         ?: "HISTORY.html".takeIf {
             FileSystem.SYSTEM.exists(it.toPath())
