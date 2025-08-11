@@ -1,3 +1,7 @@
+package traktor
+
+import traktor.TrackData
+import Tracklist
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.select.Elements
 import com.saveourtool.okio.safeToRealPath
@@ -8,20 +12,22 @@ import kotlinx.datetime.format.char
 import okio.FileSystem
 import okio.Path
 import okio.Path.Companion.toPath
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 val durationFormat = LocalTime.Companion.Format {
-//    optional {
     hour(padding = Padding.NONE)
     char('h')
-//    }
     minute(padding = Padding.ZERO)
     char(':')
     second(padding = Padding.ZERO)
 }
 
 fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
-    val logger = KotlinLogging.logger("parseHtmlFile")
+    val logger = KotlinLogging.logger("traktor.parseHtmlFile")
     return try {
         val data = FileSystem.Companion.SYSTEM.read(filePath) {
             readUtf8()
@@ -126,9 +132,18 @@ fun parseHtmlFile(filePath: Path): Tracklist<TrackData>? {
 
                             logger.info { "parsing duration: $duration" }
 
-                            val localTime = LocalTime.Companion.parse("0h" + duration, durationFormat)
-//                            val localTime = LocalTime.parse(duration, durationFormat)
-                            localTime.toSecondOfDay().seconds
+                            val components = duration
+                                .split(":")
+                                .map { it.toInt() }
+                                .reversed()
+                            val d =components[0].seconds +
+                                    components[1].minutes +
+                                    (components.getOrNull(2)?.hours ?: Duration.ZERO)+
+                                    (components.getOrNull(3)?.days ?: Duration.ZERO)
+                            d
+                           // val localTime = LocalTime.Companion.parse("0h" + duration, traktor.durationFormat)
+//                            val localTime = LocalTime.parse(duration, traktor.durationFormat)
+                           // localTime.toSecondOfDay().seconds
                         },
                         deck = cells.deckField(),
                         key = cells.keyField()

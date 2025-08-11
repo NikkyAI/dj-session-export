@@ -1,3 +1,6 @@
+package traktor
+
+import genreBreakdown
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDateTime
@@ -7,25 +10,24 @@ import kotlinx.datetime.format.char
 import kotlinx.datetime.toInstant
 import okio.FileSystem
 import okio.Path.Companion.toPath
-
-val dateFormat = LocalDateTime.Format {
-    year()
-    char('/')
-    monthNumber(padding = Padding.NONE)
-    char('/')
-    day(padding = Padding.NONE)
-    char(' ')
-    hour()
-    char(':')
-    minute()
-    char(':')
-    second()
-}
+import splitTracklists
 
 fun parseInstant(startTimeString: String): Instant {
     return LocalDateTime.parse(
         startTimeString,
-        dateFormat
+        LocalDateTime.Format {
+            year()
+            char('/')
+            monthNumber(padding = Padding.NONE)
+            char('/')
+            day(padding = Padding.NONE)
+            char(' ')
+            hour()
+            char(':')
+            minute()
+            char(':')
+            second()
+        }
     ).toInstant(TimeZone.currentSystemDefault())
 }
 

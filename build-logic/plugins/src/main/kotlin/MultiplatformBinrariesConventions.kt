@@ -73,13 +73,16 @@ class MultiplatformBinariesConventions : Plugin<Project> {
 @OptIn(ExperimentalUnsignedTypes::class)
 fun KotlinNativeBinaryContainer.executable(
     entrypoint: String = "main",
-    linkerOptions: List<String> = listOf("-Wl,--allow-multiple-definition")
+    linkerOptions: List<String> = listOf("-static-libstdc++", "-Wl,--allow-multiple-definition")
+//    linkerOptions: List<String> = listOf("-Wl","-static-libstdc++")
+//    linkerOptions: List<String> = listOf("-static-libstdc++")
 ) {
     executable() {
         entryPoint = entrypoint
         if (System.getenv("CI") == null) {
-            baseName = project.name + "-" + Random.nextUBytes(4).joinToString("") { it.toString(16) }
-            println("baseName: $baseName")
+//            baseName = project.name + "-" + Random.nextUBytes(4).joinToString("") { it.toString(16) }
+            baseName = project.name + "-dev"
+            println("${buildType.name} baseName: $baseName")
         }
         runTaskProvider?.configure {
             val args = project.providers.gradleProperty("runArgs")

@@ -7,7 +7,7 @@ plugins {
 kotlin {
     mingwX64 {
         binaries {
-            executable(entrypoint = "main")
+            executable(entrypoint = "traktor.main")
         }
     }
     sourceSets {
