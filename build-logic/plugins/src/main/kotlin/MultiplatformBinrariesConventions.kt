@@ -84,11 +84,13 @@ fun KotlinNativeBinaryContainer.executable(
 ) {
     executable() {
         entryPoint = entrypoint
-        if (System.getenv("CI") == null) {
-//            baseName = project.name + "-" + Random.nextUBytes(4).joinToString("") { it.toString(16) }
-            baseName = project.name + "-dev"
-            println("${buildType.name} baseName: $baseName")
+        baseName = if (System.getenv("CI") == null) {
+    //            baseName = project.name + "-" + Random.nextUBytes(4).joinToString("") { it.toString(16) }
+            project.name + "-dev"
+        } else {
+            project.name
         }
+        println("${buildType.name} baseName: $baseName")
         runTaskProvider?.configure {
             val args = project.providers.gradleProperty("runArgs")
             workingDir = project.file("run").also { it.mkdirs() }
@@ -97,10 +99,6 @@ fun KotlinNativeBinaryContainer.executable(
             }
         }
         linkerOpts += linkerOptions
-        freeCompilerArgs += "-Xdisable-phases=EscapeAnalysis"
-//        freeCompilerArgs += listOf(
-//            "-static-libgcc",
-//            "-static-libstdc++",
-//        )
+//        freeCompilerArgs += "-Xdisable-phases=EscapeAnalysis"
     }
 }

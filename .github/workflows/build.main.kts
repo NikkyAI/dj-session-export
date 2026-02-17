@@ -7,7 +7,7 @@
 
 @file:DependsOn("actions:cache:v4")
 @file:DependsOn("actions:checkout:v4")
-@file:DependsOn("actions:setup-java:v3")
+@file:DependsOn("actions:setup-java:v5")
 @file:DependsOn("softprops:action-gh-release:v2.0.6")
 @file:DependsOn("joutvhu:/create-release:v1.0.1")
 @file:DependsOn("gradle:actions__setup-gradle:v3")
@@ -16,6 +16,7 @@
 
 import io.github.typesafegithub.workflows.actions.actions.Cache
 import io.github.typesafegithub.workflows.actions.actions.Checkout
+import io.github.typesafegithub.workflows.actions.actions.SetupJava
 import io.github.typesafegithub.workflows.actions.gradle.ActionsSetupGradle
 import io.github.typesafegithub.workflows.actions.jimeh.UpdateTagsAction_Untyped
 import io.github.typesafegithub.workflows.actions.softprops.ActionGhRelease
@@ -43,6 +44,17 @@ workflow(
 ) {
     job(id = "build_and_package", runsOn = RunnerType.Windows2022) {
         uses(name = "Check out", action = Checkout())
+
+        uses(
+            name = "setup jdk",
+            action = SetupJava(
+                javaPackage = SetupJava.JavaPackage.Jdk,
+                javaVersion = "22",
+                architecture = "x64",
+                distribution = SetupJava.Distribution.Adopt,
+                cache = SetupJava.BuildPlatform.Gradle,
+            )
+        )
 
         uses(
             name = "setup gradle",
