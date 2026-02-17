@@ -26,29 +26,39 @@ val localKonanDir = project.provider {
     File(System.getenv("KONAN_DATA_DIR") ?: (System.getProperty("user.home") + File.separator + ".konan"))
 }
 
+val dependencyDllFiles = project.provider {
+    localKonanDir.get()
+        .also {
+            logger.lifecycle("listing $it")
+            logger.lifecycle(it.listFilesOrdered { true }.joinToString("\n"))
+        }
+        .resolve("dependencies")
+//            .also { print(it.listFiles().joinToString("\n")) }
+        .listFilesOrdered { it.isDirectory && it.name.startsWith("msys2-mingw") }
+        .firstOrNull()// ?: error("cannot find msys2-mingw in konan dir ${localKonanDir.get()}")
+        ?.let { msys2Mingw ->
+            msys2Mingw.resolve("bin").listFilesOrdered { f ->
+                f.extension == "dll" &&
+                        f.nameWithoutExtension.startsWith("libstdc++") ||
+                        f.nameWithoutExtension.startsWith("libgcc_s_seh") ||
+                        f.nameWithoutExtension.startsWith("libwinpthread")
+            }
+        }.orEmpty()
+}
+
 tasks {
     val packageDependencies by registering(Zip::class) {
         group = "package"
+        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
 
-        val msys2Mingw = localKonanDir.get()
-            .resolve("dependencies")
-//            .also { print(it.listFiles().joinToString("\n")) }
-            .listFilesOrdered { it.isDirectory && it.name.startsWith("msys2-mingw") }
-            .firstOrNull() ?: error("cannot find msys2-mingw in konan dir ${localKonanDir.get()}")
-        msys2Mingw.resolve("bin").listFilesOrdered { f ->
-            f.extension == "dll" &&
-                    f.nameWithoutExtension.startsWith("libstdc++") ||
-                    f.nameWithoutExtension.startsWith("libgcc_s_seh") ||
-                    f.nameWithoutExtension.startsWith("libwinpthread")
-        }.forEach {
-            from(it)
-        }
+        from(dependencyDllFiles)
 
         archiveBaseName = "dependencies"
         destinationDirectory = project.layout.buildDirectory
     }
     val packageZip by registering(Zip::class) {
         group = "package"
+        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
         subprojects
             .forEach { subproject ->
                 subproject.tasks.firstOrNull {
@@ -65,24 +75,14 @@ tasks {
                     from(it)
                 }
             }
-        val msys2Mingw = localKonanDir.get()
-            .resolve("dependencies")
-//            .also { print(it.listFiles().joinToString("\n")) }
-            .listFilesOrdered { it.isDirectory && it.name.startsWith("msys2-mingw") }
-            .firstOrNull() ?: error("cannot find msys2-mingw in konan dir ${localKonanDir.get()}")
-        msys2Mingw.resolve("bin").listFilesOrdered { f ->
-            f.extension == "dll" &&
-                    f.nameWithoutExtension.startsWith("libstdc++") ||
-                    f.nameWithoutExtension.startsWith("libgcc_s_seh") ||
-                    f.nameWithoutExtension.startsWith("libwinpthread")
-        }.forEach {
-            from(it)
-        }
+
+        from(dependencyDllFiles)
         archiveBaseName = "dist"
         destinationDirectory = project.layout.buildDirectory
     }
     val copyExecutables by registering(Copy::class) {
         group = "package"
+        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
         dependsOn(packageDependencies)
 
         subprojects
@@ -101,19 +101,8 @@ tasks {
                     from(it)
                 }
             }
-        val msys2Mingw = localKonanDir.get()
-            .resolve("dependencies")
-//            .also { print(it.listFiles().joinToString("\n")) }
-            .listFilesOrdered { it.isDirectory && it.name.startsWith("msys2-mingw") }
-            .firstOrNull() ?: error("cannot find msys2-mingw in konan dir ${localKonanDir.get()}")
-        msys2Mingw.resolve("bin").listFilesOrdered { f ->
-            f.extension == "dll" &&
-                    f.nameWithoutExtension.startsWith("libstdc++") ||
-                    f.nameWithoutExtension.startsWith("libgcc_s_seh") ||
-                    f.nameWithoutExtension.startsWith("libwinpthread")
-        }.forEach {
-            from(it)
-        }
+
+        from(dependencyDllFiles)
 
         destinationDir = file(project.layout.buildDirectory)
     }
