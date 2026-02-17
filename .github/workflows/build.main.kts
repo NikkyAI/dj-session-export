@@ -105,6 +105,7 @@ workflow(
             )
         )
 
+        run(command = "./gradlew downloadKotlinNativeDistribution --no-daemon")
         run(command = "./gradlew packageZip copyExecutables --no-daemon")
 
         uses(

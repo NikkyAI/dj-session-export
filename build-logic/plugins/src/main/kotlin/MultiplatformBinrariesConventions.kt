@@ -77,7 +77,7 @@ fun KotlinNativeBinaryContainer.executable(
     linkerOptions: List<String> = listOf(
 //        "-static-libgcc",
 //        "-static-libstdc++",
-        "-Wl,--allow-multiple-definition,-static-libstdc++",
+        "-Wl,--allow-multiple-definition",
     )
 //    linkerOptions: List<String> = listOf("-Wl","-static-libstdc++")
 //    linkerOptions: List<String> = listOf("-static-libstdc++")
