@@ -3,6 +3,7 @@ package update
 import com.github.ajalt.clikt.parameters.groups.OptionGroup
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import currentProgramPath
 
 class UpdateArgs: OptionGroup("update") {
 

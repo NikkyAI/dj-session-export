@@ -1,6 +1,3 @@
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.format
-import platform.posix.localtime
 import kotlin.time.Duration
 
 fun Duration.formatTimestamp(): String {

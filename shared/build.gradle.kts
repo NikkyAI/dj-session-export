@@ -1,6 +1,5 @@
 import org.gradle.kotlin.dsl.commonMain
 import org.gradle.kotlin.dsl.dependencies
-import org.gradle.kotlin.dsl.implementation
 
 plugins {
     kotlin("multiplatform")
@@ -8,10 +7,11 @@ plugins {
 }
 
 val generatedSrc = file(layout.buildDirectory).resolve("generated-src")
-generatedSrc.mkdirs()
 val generatedFile = generatedSrc.resolve("generated.kt")
-generatedFile.writeText(
-    """
+fun generate() {
+    generatedSrc.mkdirs()
+    generatedFile.writeText(
+        """
         import kotlin.time.Instant
 
         object Generated {
@@ -19,10 +19,32 @@ generatedFile.writeText(
             val buildEnv: String? = ${System.getenv("CI")?.let { "\"$it\"" }}
         }
     """.trimIndent()
-)
+    )
+}
+//generate()
 
+//tasks.compileKotlinJvm {
+//    doFirst {
+//        generate()
+//    }
+//}
 kotlin {
-    mingwX64()
+    jvm {}
+    mingwX64 {
+        compilerOptions {
+
+        }
+//        binaries {
+//            staticLib {
+//                this.linkerOpts += listOf(
+//                    "-static-libgcc",
+//                    "-static-libstdc++",
+//                    "-Wl,--allow-multiple-definition",
+//                )
+//            }
+//        }
+    }
+
     sourceSets {
         commonMain.dependencies {
             api("org.jetbrains.kotlinx:kotlinx-coroutines-core:_")
@@ -43,15 +65,21 @@ kotlin {
 //            implementation("com.soywiz:korlibs-template:_")
 
             api("com.github.ajalt.clikt:clikt:_")
-//            api("com.github.ajalt.clikt:clikt-markdown:_")
+            api("com.github.ajalt.clikt:clikt-markdown:_")
 
             implementation("org.kotlincrypto.hash:sha2:_")
 
             api("io.github.oshai:kotlin-logging:_")
 //            implementation("io.klogging:klogging:_")
+            api("io.ktor:ktor-client-core:_")
+            api("io.ktor:ktor-client-cio:_")
         }
         mingwMain.dependencies {
             implementation("io.ktor:ktor-client-winhttp:_")
+        }
+        jvmMain.dependencies {
+            implementation("io.ktor:ktor-client-okhttp:_")
+//            implementation("ch.qos.logback:logback-classic:_")
         }
         commonMain {
             kotlin.srcDir(generatedSrc)
@@ -63,4 +91,39 @@ kotlin {
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
     }
+}
+
+abstract class GenerateCodeTask : DefaultTask() {
+    @get:Input
+    abstract val generatedFileProp: Property<File>
+
+    @TaskAction
+    fun generateCode() {
+        val generatedFile = generatedFileProp.get()
+        generatedFile.parentFile.mkdirs()
+        generatedFile.writeText(
+        """
+            import kotlin.time.Instant
+    
+            object Generated {
+                val buildTime: Instant = Instant.fromEpochMilliseconds(${System.currentTimeMillis()})
+                val buildEnv: String? = ${System.getenv("CI")?.let { "\"$it\"" }}
+            }
+        """.trimIndent()
+        )
+    }
+}
+
+
+val generateCode = tasks.register("generateCode", GenerateCodeTask::class) {
+    generatedFileProp = project.provider {
+        generatedFile
+    }
+}
+
+val compileKotlinJvm by tasks.getting {
+    dependsOn(generateCode)
+}
+val compileKotlinMingwX64 by tasks.getting {
+    dependsOn(generateCode)
 }

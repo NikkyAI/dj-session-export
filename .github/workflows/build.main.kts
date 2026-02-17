@@ -110,7 +110,9 @@ workflow(
                 prerelease = false,
                 files = listOf(
                     "build/dist.zip",
-                    "build/*.exe"
+                    "build/*.exe",
+                    "build/*.jar",
+                    "build/dependencies.zip",
                 ),
                 name = "Latest Build",
                 tagName = "nightly",

@@ -1,4 +1,4 @@
-package mixxx
+package djay
 
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration

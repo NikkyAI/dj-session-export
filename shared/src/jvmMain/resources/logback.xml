@@ -1,0 +1,67 @@
+<configuration>
+    <timestamp key="bySecond" datePattern="yyyy/MM-dd/'log'-yyyy-MM-dd_HH-mm-ss"/>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <!-- use the previously created timestamp to create a uniquely named log file -->
+        <file>logs/${bySecond}.log</file>
+        <encoder>
+            <pattern>
+                %-45(%d{HH:mm:ss.SSS} %-20(.\(%F:%L\))) %-16([%thread]) %-5level - %msg %n
+            </pattern>
+        </encoder>
+    </appender>
+    <appender name="FILE-TRACE" class="ch.qos.logback.core.FileAppender">
+        <!-- use the previously created timestamp to create a uniquely named log file -->
+        <file>logs/${bySecond}-trace.log</file>
+        <encoder>
+            <pattern>
+                %-45(%d{HH:mm:ss.SSS} %-20(.\(%F:%L\))) %-16([%thread]) %-5level - %msg %n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <Target>System.out</Target>
+        <encoder>
+            <pattern>
+                %-45(%d{HH:mm:ss.SSS} %-20(.\(%F:%L\))) %-16([%thread]) %-5level - %msg %n
+            </pattern>
+<!--
+             <pattern>
+                 %-45(%d{HH:mm:ss.SSS} %logger %-20(.\(%F:%L\))) %-5level [%thread] - %msg %n
+             </pattern>
+-->
+        </encoder>
+    </appender>
+
+
+    <appender name="ASYNC-STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT"/>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+    <appender name="ASYNC-FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>DEBUG</level>
+        </filter>
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+    <appender name="ASYNC-FILE-TRACE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE-TRACE"/>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>TRACE</level>
+        </filter>
+        <includeCallerData>true</includeCallerData>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+
+    <root level="TRACE">
+        <appender-ref ref="ASYNC-STDOUT"/>
+        <appender-ref ref="ASYNC-FILE"/>
+        <appender-ref ref="ASYNC-FILE-TRACE"/>
+    </root>
+</configuration>

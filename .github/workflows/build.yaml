@@ -62,6 +62,8 @@ jobs:
         files: |-
           build/dist.zip
           build/*.exe
+          build/*.jar
+          build/dependencies.zip
         fail_on_unmatched_files: 'true'
         generate_release_notes: 'true'
         make_latest: 'true'

@@ -5,10 +5,11 @@ import com.kgit2.kommand.process.Command
 import com.kgit2.kommand.process.Stdio
 import com.saveourtool.okio.pathString
 import com.saveourtool.okio.safeToRealPath
+import currentProgramPath
+import exitProcess
+import httpClient
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.engine.winhttp.WinHttp
 import io.ktor.client.request.get
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsText
@@ -22,8 +23,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 import org.kotlincrypto.hash.sha2.SHA256
-import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.minutes
 
 object Updater {
@@ -48,6 +49,7 @@ object Updater {
         val arglist = args.joinToString(",") { arg ->
             "\"$arg\""
         }
+        //TODO: detect system and only do this on windows, add .sh scripts ?
         FileSystem.SYSTEM.write(scriptPath) {
             // language=PowerShell
             writeUtf8(
@@ -102,6 +104,7 @@ object Updater {
         exitProcess(0)
     }
 
+
     suspend fun getUpdatedBinary(
         assetName: String,
         githubUser: String = "nikkyai",
@@ -109,11 +112,14 @@ object Updater {
         tag: String = "nightly",
         currentDigest: String = getCurrentBinaryDigest(),
     ): Path? {
-        val httpClient = HttpClient(WinHttp) {}
+//        if(assetName == null) {
+//            return null
+//        }
+
+        val httpClient = httpClient()
         val json = Json {
             ignoreUnknownKeys = true
         }
-
         val responseString = httpClient.get(
             urlString = "https://api.github.com/repos/$githubUser/$project/releases/tags/$tag"
         ).bodyAsText()

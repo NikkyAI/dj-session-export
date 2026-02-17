@@ -1,0 +1,1 @@
+expect fun exitProcess(i: Int): Nothing

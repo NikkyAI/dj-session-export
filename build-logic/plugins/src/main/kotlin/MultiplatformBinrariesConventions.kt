@@ -48,12 +48,13 @@ class MultiplatformBinariesConventions : Plugin<Project> {
             )
 
 //            logger.info { "Enabling target jvm" }
-//            jvm {
-//                @OptIn(ExperimentalKotlinGradlePluginApi::class)
-//                mainRun {
-//                    mainClass.set("MainKt")
-//                }
-//            }
+            println("Enabling target jvm")
+            jvm {
+                @OptIn(ExperimentalKotlinGradlePluginApi::class)
+                mainRun {
+                    mainClass.set("MainKt")
+                }
+            }
 
             targets.forEach {
                 println("Enabling target $it")
@@ -73,7 +74,11 @@ class MultiplatformBinariesConventions : Plugin<Project> {
 @OptIn(ExperimentalUnsignedTypes::class)
 fun KotlinNativeBinaryContainer.executable(
     entrypoint: String = "main",
-    linkerOptions: List<String> = listOf("-static-libstdc++", "-Wl,--allow-multiple-definition")
+    linkerOptions: List<String> = listOf(
+//        "-static-libgcc",
+//        "-static-libstdc++",
+        "-Wl,--allow-multiple-definition,-static-libstdc++",
+    )
 //    linkerOptions: List<String> = listOf("-Wl","-static-libstdc++")
 //    linkerOptions: List<String> = listOf("-static-libstdc++")
 ) {
@@ -92,5 +97,10 @@ fun KotlinNativeBinaryContainer.executable(
             }
         }
         linkerOpts += linkerOptions
+        freeCompilerArgs += "-Xdisable-phases=EscapeAnalysis"
+//        freeCompilerArgs += listOf(
+//            "-static-libgcc",
+//            "-static-libstdc++",
+//        )
     }
 }

@@ -7,9 +7,6 @@ import com.kgit2.kommand.process.Stdio
 import com.saveourtool.okio.pathString
 import com.saveourtool.okio.safeToRealPath
 import io.github.oshai.kotlinlogging.KotlinLogging
-//import korlibs.template.KorteAutoEscapeMode
-//import korlibs.template.KorteTemplate
-//import korlibs.template.KorteTemplateConfig
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
@@ -20,6 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okio.FileSystem
 import okio.Path
+import okio.SYSTEM
 
 
 object Exporter {
@@ -137,9 +135,6 @@ object Exporter {
                 tracklist.exportPath.safeToRealPath()
             )
         }
-//        tracklist.tracks.forEach {
-//            logger.info { it }
-//        }
         val formatter = loadFormatter(
             dir = templateFolder,
             defaultTemplate = defaultTemplate,

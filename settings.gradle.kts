@@ -9,9 +9,9 @@ pluginManagement {
     includeBuild("build-logic")
 }
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
     // See https://jmfayard.github.io/refreshVersions
-    id("de.fayard.refreshVersions") version "0.60.5"
+    id("de.fayard.refreshVersions") version "0.60.6"
 }
 
 rootProject.name = "dj-session-export-root"
@@ -25,5 +25,6 @@ include("traktor-export")
 include("serato-export")
 include("rekordbox-export")
 include("mixxx-export")
+//include("djay-export")
 include("virtualdj-export")
 include("dj-session-export")

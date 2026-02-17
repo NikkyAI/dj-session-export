@@ -1,14 +1,18 @@
 import com.github.ajalt.mordant.rendering.AnsiLevel
-import com.github.ajalt.mordant.rendering.OverflowWrap
-import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.rendering.TextColors.black
+import com.github.ajalt.mordant.rendering.TextColors.brightRed
+import com.github.ajalt.mordant.rendering.TextColors.brightYellow
+import com.github.ajalt.mordant.rendering.TextColors.cyan
+import com.github.ajalt.mordant.rendering.TextColors.gray
+import com.github.ajalt.mordant.rendering.TextColors.red
+import com.github.ajalt.mordant.rendering.TextColors.white
+import com.github.ajalt.mordant.rendering.Whitespace
 import com.github.ajalt.mordant.terminal.Terminal
 import io.github.oshai.kotlinlogging.Appender
-import io.github.oshai.kotlinlogging.ConsoleOutputAppender
+import io.github.oshai.kotlinlogging.DirectLoggerFactory
 import io.github.oshai.kotlinlogging.KLoggingEvent
 import io.github.oshai.kotlinlogging.KotlinLoggingConfiguration
 import io.github.oshai.kotlinlogging.Level
-import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.staticCFunction
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -22,24 +26,19 @@ import kotlinx.datetime.format
 import kotlinx.datetime.format.char
 import kotlinx.datetime.toLocalDateTime
 import okio.FileSystem
-import platform.posix.SIGINT
-import platform.posix.atexit
-import platform.posix.signal
+import okio.SYSTEM
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
-import com.github.ajalt.mordant.rendering.TextColors.*
-import com.github.ajalt.mordant.rendering.TextStyle
-import com.github.ajalt.mordant.rendering.Whitespace
-import platform.windows.ANSI_NULL
 
-private val logChannel: Channel<Pair<KLoggingEvent, String>> = Channel()
-private val loggingScope = CoroutineScope(CoroutineName("log-writer"))
+//expect suspend fun configureLogging()
 
-@OptIn(ExperimentalForeignApi::class)
-suspend fun configureLogging() {
+val logChannel: Channel<Pair<KLoggingEvent, String>> = Channel()
+val loggingScope = CoroutineScope(CoroutineName("log-writer"))
 
-    KotlinLoggingConfiguration.logLevel = Level.DEBUG
+fun configureLogging() {
+    KotlinLoggingConfiguration.loggerFactory = DirectLoggerFactory
+    KotlinLoggingConfiguration.direct.logLevel = Level.DEBUG
 
     val now = Clock.System.now()
     val basename = now.toLocalDateTime(TimeZone.currentSystemDefault()).format(
@@ -113,7 +112,7 @@ suspend fun configureLogging() {
 
     val plainTerminal = Terminal(AnsiLevel.NONE)
 
-    KotlinLoggingConfiguration.appender = object : Appender {
+    KotlinLoggingConfiguration.direct.appender = object : Appender {
         override fun log(loggingEvent: KLoggingEvent) {
             terminalAppender.log(
                 loggingEvent = loggingEvent
@@ -123,8 +122,9 @@ suspend fun configureLogging() {
                     message = loggingEvent.message,
                     whitespace = Whitespace.NOWRAP,
                     width = 150
-                ))
-            KotlinLoggingConfiguration.formatter.formatMessage(loggingEvent).let {
+                )
+            )
+            KotlinLoggingConfiguration.direct.formatter.formatMessage(loggingEvent).let {
                 logChannel.trySendBlocking(loggingEvent to it)
 //                logFormattedMessage(loggingEvent, it)
             }
@@ -143,7 +143,7 @@ suspend fun configureLogging() {
         FileSystem.SYSTEM.write(logFile) {
             var lastFlush = Instant.DISTANT_PAST
             for ((event, msg) in logChannel) {
-                writeUtf8(msg.toString())
+                writeUtf8(msg)
                 writeUtf8("\n")
                 val now = Clock.System.now()
                 if (now > lastFlush + 10.seconds) {
@@ -155,41 +155,23 @@ suspend fun configureLogging() {
         println("logfile closed")
     }
 
-    atexit(staticCFunction<Unit> {
-        logChannel.close()
-//        loggingScope.cancel()
-        println("Exit!")
-    })
-    signal(SIGINT, staticCFunction<Int, Unit> {
-        logChannel.close()
-//        runBlocking {
-//            delay(1.seconds)
-//        }
-        loggingScope.cancel()
-        println("Exit!")
-    })
-//    KotlinLoggingConfiguration.formatter = object : Formatter {
-//        override fun formatMessage(loggingEvent: KLoggingEvent): String {
-//            with(loggingEvent) {
-//                return buildString {
-//                    append(prefix(level, loggerName))
-//                    marker?.getName()?.let {
-//                        append(it)
-//                        append(" ")
-//                    }
-//                    append(message)
-//                    append(cause.throwableToString())
-//                }
-//            }
-//        }
-//        private fun prefix(level: Level, loggerName: String): String {
-//            return if (includePrefix) {
-//                "${level.name}: [$loggerName] "
-//            } else {
-//                ""
-//            }
-//        }
-//
-//    }
-
+    registerOnExit()
+    registerInterrupt()
 }
+fun onExit() {
+    println("Exit!")
+    if(logChannel.close()) {
+        println("log channel closed")
+    }
+}
+fun onInterrupt() {
+    println("Interrupt!")
+    if(logChannel.close()) {
+        println("log channel closed")
+    }
+    loggingScope.cancel("SIGINT received")
+    println("logging scope cancelled")
+    exitProcess(1)
+}
+expect fun registerOnExit()
+expect fun registerInterrupt()
