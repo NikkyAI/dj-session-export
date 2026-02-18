@@ -1,3 +1,6 @@
+import de.undercouch.gradle.tasks.download.Download
+import de.undercouch.gradle.tasks.download.DownloadExtension
+import org.gradle.kotlin.dsl.download
 import org.gradle.kotlin.dsl.support.listFilesOrdered
 
 /*
@@ -11,6 +14,7 @@ plugins {
     kotlin("multiplatform") apply false
     kotlin("plugin.serialization") apply false
     id("com.gradleup.shadow") apply false
+    id("de.undercouch.download")
 }
 
 allprojects {
@@ -46,12 +50,42 @@ val dependencyDllFiles = project.provider {
         }.orEmpty()
 }
 
+val mingwDownloadDest = project.provider {
+    layout.buildDirectory.file("download/msys2-mingw-w64-x86_64-2.zip").get().asFile
+}
+
 tasks {
+    val downloadMsys2Mingw by registering(Download::class) {
+        group = "package"
+        src("https://download.jetbrains.com/kotlin/native/msys2-mingw-w64-x86_64-2.zip")
+        dest(mingwDownloadDest)
+        overwrite(false)
+    }
+    val unzipDependencyDlls by registering(Copy::class) {
+        group = "package"
+
+        dependsOn(downloadMsys2Mingw)
+        from(
+            zipTree(downloadMsys2Mingw.get().dest)
+                .filter { f ->
+                    f.parentFile.name == "bin" &&
+                            f.extension == "dll" &&
+                            listOf(
+                                "libstdc++",
+                                "libgcc_s_seh",
+                                "libwinpthread",
+                            ).any {
+                                f.nameWithoutExtension.startsWith(it)
+                            }
+                }
+        )
+        into(layout.buildDirectory.file("unzip"))
+    }
     val packageDependencies by registering(Zip::class) {
         group = "package"
         dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
 
-        from(dependencyDllFiles)
+        from(unzipDependencyDlls)
 
         archiveBaseName = "dependencies"
         destinationDirectory = project.layout.buildDirectory
@@ -76,7 +110,7 @@ tasks {
                 }
             }
 
-        from(dependencyDllFiles)
+        from(unzipDependencyDlls)
         archiveBaseName = "dist"
         destinationDirectory = project.layout.buildDirectory
     }
@@ -102,7 +136,7 @@ tasks {
                 }
             }
 
-        from(dependencyDllFiles)
+        from(unzipDependencyDlls)
 
         destinationDir = file(project.layout.buildDirectory)
     }

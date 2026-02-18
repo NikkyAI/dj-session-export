@@ -53,15 +53,13 @@ jobs:
         key: '${{ runner.os }}-konan-${{ hashFiles(''*.gradle.kts'', ''**/*.gradle.kts'', ''versions.properties'') }}'
         restore-keys: '${{ runner.os }}-konan-'
     - id: 'step-4'
-      run: './gradlew downloadKotlinNativeDistribution --no-daemon'
-    - id: 'step-5'
       run: './gradlew packageZip copyExecutables --no-daemon'
-    - id: 'step-6'
+    - id: 'step-5'
       name: 'update tag'
       uses: 'jimeh/update-tags-action@v1.0.1'
       with:
         tags: 'nightly'
-    - id: 'step-7'
+    - id: 'step-6'
       name: 'create release'
       uses: 'softprops/action-gh-release@v2.0.6'
       with:

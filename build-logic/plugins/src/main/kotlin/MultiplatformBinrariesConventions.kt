@@ -75,12 +75,8 @@ class MultiplatformBinariesConventions : Plugin<Project> {
 fun KotlinNativeBinaryContainer.executable(
     entrypoint: String = "main",
     linkerOptions: List<String> = listOf(
-//        "-static-libgcc",
-//        "-static-libstdc++",
         "-Wl,--allow-multiple-definition",
     )
-//    linkerOptions: List<String> = listOf("-Wl","-static-libstdc++")
-//    linkerOptions: List<String> = listOf("-static-libstdc++")
 ) {
     executable() {
         entryPoint = entrypoint
