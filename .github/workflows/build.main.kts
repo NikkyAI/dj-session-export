@@ -123,8 +123,8 @@ workflow(
                 draft = false,
                 prerelease = false,
                 files = listOf(
-                    "build/*-win.zip",
-                    "build/*.jar",
+                    "build/release/*-win.zip",
+                    "build/release/*.jar",
                 ),
                 name = "Latest Build",
                 tagName = "nightly",

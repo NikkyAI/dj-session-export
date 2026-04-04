@@ -69,8 +69,8 @@ jobs:
         draft: 'false'
         prerelease: 'false'
         files: |-
-          build/*-win.zip
-          build/*.jar
+          build/release/*-win.zip
+          build/release/*.jar
         fail_on_unmatched_files: 'true'
         generate_release_notes: 'true'
         make_latest: 'true'

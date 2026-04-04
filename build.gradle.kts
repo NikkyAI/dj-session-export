@@ -50,9 +50,7 @@ val dependencyDllFiles = project.provider {
         }.orEmpty()
 }
 
-val mingwDownloadDest = project.provider {
-    layout.buildDirectory.file("download/msys2-mingw-w64-x86_64-2.zip").get().asFile
-}
+val mingwDownloadDest = layout.buildDirectory.file("download/msys2-mingw-w64-x86_64-2.zip")
 
 tasks {
     val downloadMsys2Mingw by registering(Download::class) {
@@ -79,17 +77,17 @@ tasks {
                             }
                 }
         )
-        into(layout.buildDirectory.file("unzip"))
+        into(layout.buildDirectory.file("dependencies"))
     }
-    val packageDependencies by registering(Zip::class) {
-        group = "package"
-//        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
-
-        from(unzipDependencyDlls)
-
-        archiveBaseName = "dependencies-win"
-        destinationDirectory = project.layout.buildDirectory
-    }
+//    val packageDependencies by registering(Zip::class) {
+//        group = "package"
+////        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
+//
+//        from(unzipDependencyDlls)
+//
+//        archiveBaseName = "dependencies-win"
+//        destinationDirectory = project.layout.buildDirectory
+//    }
 
     subprojects.forEach { subproject ->
         subproject.afterEvaluate {
@@ -120,6 +118,7 @@ tasks {
             }
 
         destinationDir = file(project.layout.buildDirectory)
+        destinationDir = file(layout.buildDirectory.file("release"))
     }
     val copyJars by registering(Copy::class) {
         group = "package"
@@ -132,7 +131,7 @@ tasks {
                 }
             }
 
-        destinationDir = file(project.layout.buildDirectory)
+        destinationDir = file(layout.buildDirectory.file("release"))
     }
 
 //    val packageZipWin by registering(Zip::class) {
