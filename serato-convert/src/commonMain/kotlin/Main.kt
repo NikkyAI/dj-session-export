@@ -67,8 +67,7 @@ fun parseFLF(filePath: Path): List<SeratoExport> {
         }
         .filter { it.isNotBlank() }
         .map { line ->
-            logger.info { line }
-            val flf = FixedLengthFormat.decodeFromString(SeratoExportFLF.serializer(), line.take(156))
+            val flf = FixedLengthFormat.decodeFromString(SeratoExportFLF.serializer(), line)
             SeratoExport(
                 name = flf.name.trim(),
                 startTime = flf.startTime.trim(),
@@ -84,15 +83,20 @@ fun parseFLF(filePath: Path): List<SeratoExport> {
 }
 
 @OptIn(ExperimentalSerializationApi::class)
+val csvFormat by lazy {
+    CSVFormat {
+        separator = ','
+        alwaysEmitQuotes = true
+    }
+}
+
+@OptIn(ExperimentalSerializationApi::class)
 fun parseCSV(filePath: Path): List<SeratoExport> {
 
     val data = FileSystem.SYSTEM.read(filePath) {
         readUtf8()
     }.let { csv ->
-        CSVFormat {
-            separator = ','
-            alwaysEmitQuotes = true
-        }.decodeFromString(ListSerializer(SeratoExport.serializer()), csv)
+        csvFormat.decodeFromString(ListSerializer(SeratoExport.serializer()), csv)
     }
     return data
 }

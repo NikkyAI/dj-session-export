@@ -26,11 +26,6 @@ kotlin {
             implementation(project(":shared"))
         }
     }
-
-//    jvmToolchain(21)
-//    compilerOptions {
-//        optIn.add("kotlin.time.ExperimentalTime")
-//    }
 }
 tasks {
     shadowJar {

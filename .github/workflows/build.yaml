@@ -34,7 +34,7 @@ jobs:
       name: 'setup jdk'
       uses: 'actions/setup-java@v5'
       with:
-        java-version: '22'
+        java-version: '24'
         distribution: 'adopt'
         java-package: 'jdk'
         architecture: 'x64'
@@ -53,7 +53,7 @@ jobs:
         key: '${{ runner.os }}-konan-${{ hashFiles(''*.gradle.kts'', ''**/*.gradle.kts'', ''versions.properties'') }}'
         restore-keys: '${{ runner.os }}-konan-'
     - id: 'step-4'
-      run: './gradlew packageZip copyExecutables --no-daemon'
+      run: './gradlew copyZipsMingwX64 copyJars --no-daemon'
     - id: 'step-5'
       name: 'update tag'
       uses: 'jimeh/update-tags-action@v1.0.1'
@@ -69,10 +69,8 @@ jobs:
         draft: 'false'
         prerelease: 'false'
         files: |-
-          build/dist.zip
-          build/*.exe
+          build/*-win.zip
           build/*.jar
-          build/dependencies.zip
         fail_on_unmatched_files: 'true'
         generate_release_notes: 'true'
         make_latest: 'true'

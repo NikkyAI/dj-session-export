@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    id("com.gradleup.shadow")
     id("multiplatform.binaries")
 }
 
@@ -25,5 +26,12 @@ kotlin {
     jvmToolchain(21)
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
+    }
+}
+
+tasks {
+    shadowJar {
+        archiveVersion = ""
+        archiveClassifier = ""
     }
 }

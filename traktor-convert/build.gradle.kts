@@ -20,7 +20,7 @@ kotlin {
         }
     }
     sourceSets {
-        mingwMain.dependencies {
+        commonMain.dependencies {
             implementation(project(":shared"))
             implementation("com.fleeksoft.ksoup:ksoup:_")
         }

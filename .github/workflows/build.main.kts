@@ -1,7 +1,7 @@
 #!/usr/bin/env kotlin
 
 @file:Repository("https://repo.maven.apache.org/maven2/")
-@file:DependsOn("io.github.typesafegithub:github-workflows-kt:3.5.0")
+@file:DependsOn("io.github.typesafegithub:github-workflows-kt:3.7.0")
 
 @file:Repository("https://bindings.krzeminski.it")
 
@@ -25,6 +25,7 @@ import io.github.typesafegithub.workflows.domain.triggers.Push
 import io.github.typesafegithub.workflows.dsl.expressions.Contexts.hashFiles
 import io.github.typesafegithub.workflows.dsl.expressions.expr
 import io.github.typesafegithub.workflows.dsl.workflow
+import io.github.typesafegithub.workflows.yaml.CheckoutActionVersionSource
 import io.github.typesafegithub.workflows.yaml.ConsistencyCheckJobConfig
 
 workflow(
@@ -39,7 +40,8 @@ workflow(
         additionalSteps = {
 
         },
-        useLocalBindingsServerAsFallback = false
+        checkoutActionVersion = CheckoutActionVersionSource.BundledWithLibrary,
+        useLocalBindingsServerAsFallback = false,
     )
 ) {
     job(id = "build_and_package", runsOn = RunnerType.Windows2022) {
@@ -49,7 +51,7 @@ workflow(
             name = "setup jdk",
             action = SetupJava(
                 javaPackage = SetupJava.JavaPackage.Jdk,
-                javaVersion = "22",
+                javaVersion = "24",
                 architecture = "x64",
                 distribution = SetupJava.Distribution.Adopt,
                 cache = SetupJava.BuildPlatform.Gradle,
@@ -105,7 +107,7 @@ workflow(
             )
         )
 
-        run(command = "./gradlew packageZip copyExecutables --no-daemon")
+        run(command = "./gradlew copyZipsMingwX64 copyJars --no-daemon")
 
         uses(
             name = "update tag",
@@ -121,10 +123,8 @@ workflow(
                 draft = false,
                 prerelease = false,
                 files = listOf(
-                    "build/dist.zip",
-                    "build/*.exe",
+                    "build/*-win.zip",
                     "build/*.jar",
-                    "build/dependencies.zip",
                 ),
                 name = "Latest Build",
                 tagName = "nightly",

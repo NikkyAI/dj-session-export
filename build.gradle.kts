@@ -13,7 +13,7 @@ import org.gradle.kotlin.dsl.support.listFilesOrdered
 plugins {
     kotlin("multiplatform") apply false
     kotlin("plugin.serialization") apply false
-    id("com.gradleup.shadow") apply false
+    //id("com.gradleup.shadow") apply false
     id("de.undercouch.download")
 }
 
@@ -83,62 +83,88 @@ tasks {
     }
     val packageDependencies by registering(Zip::class) {
         group = "package"
-        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
+//        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
 
         from(unzipDependencyDlls)
 
-        archiveBaseName = "dependencies"
+        archiveBaseName = "dependencies-win"
         destinationDirectory = project.layout.buildDirectory
     }
-    val packageZip by registering(Zip::class) {
-        group = "package"
-        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
-        subprojects
-            .forEach { subproject ->
-                subproject.tasks.firstOrNull {
-                    it.name == "linkReleaseExecutableMingwX64"
-                }?.let {
-                    from(it)
-                }
-            }
-        subprojects
-            .forEach { subproject ->
-                subproject.tasks.firstOrNull {
-                    it.name == "shadowJar"
-                }?.let {
-                    from(it)
-                }
-            }
 
-        from(unzipDependencyDlls)
-        archiveBaseName = "dist"
-        destinationDirectory = project.layout.buildDirectory
+    subprojects.forEach { subproject ->
+        subproject.afterEvaluate {
+            val linkTask = subproject.tasks.findByName("linkReleaseExecutableMingwX64")
+            if (linkTask != null) {
+                val zipMingwX64 by subproject.tasks.registering(Zip::class) {
+                    group = "package"
+                    from(subproject.tasks["linkReleaseExecutableMingwX64"])
+                    from(rootProject.tasks["unzipDependencyDlls"])
+                    archiveBaseName = "${subproject.name}-win"
+                    destinationDirectory = subproject.layout.buildDirectory
+                    version = ""
+                }
+            } else {
+                logger.lifecycle("subproject ${subproject.name} does not have task: linkReleaseExecutableMingwX64")
+            }
+        }
     }
-    val copyExecutables by registering(Copy::class) {
+    val copyZipsMingwX64 by registering(Copy::class) {
         group = "package"
-        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
-        dependsOn(packageDependencies)
-
         subprojects
             .forEach { subproject ->
                 subproject.tasks.firstOrNull {
-                    it.name == "linkReleaseExecutableMingwX64"
+                    it.name == "zipMingwX64"
                 }?.let {
                     from(it)
                 }
             }
-        subprojects
-            .forEach { subproject ->
-                subproject.tasks.firstOrNull {
-                    it.name == "shadowJar"
-                }?.let {
-                    from(it)
-                }
-            }
-
-        from(unzipDependencyDlls)
 
         destinationDir = file(project.layout.buildDirectory)
     }
+    val copyJars by registering(Copy::class) {
+        group = "package"
+        subprojects
+            .forEach { subproject ->
+                subproject.tasks.firstOrNull {
+                    it.name == "shadowJar"
+                }?.let {
+                    from(it)
+                }
+            }
+
+        destinationDir = file(project.layout.buildDirectory)
+    }
+
+//    val packageZipWin by registering(Zip::class) {
+//        group = "package"
+//        dependsOn(":dj-session-export:downloadKotlinNativeDistribution")
+//        subprojects
+//            .forEach { subproject ->
+//                subproject.tasks.firstOrNull {
+//                    it.name == "linkReleaseExecutableMingwX64"
+//                }?.let {
+//                    from(it)
+//                }
+//            }
+//
+//        from(unzipDependencyDlls)
+//        archiveBaseName = "dist-win"
+//        destinationDirectory = project.layout.buildDirectory
+//    }
+//
+//    val packageZipJvm by registering(Zip::class) {
+//        group = "package"
+//        subprojects
+//            .forEach { subproject ->
+//                subproject.tasks.firstOrNull {
+//                    it.name == "shadowJar"
+//                }?.let {
+//                    from(it)
+//                }
+//            }
+//
+//        archiveBaseName = "dist-jvm"
+//        destinationDirectory = project.layout.buildDirectory
+//    }
 }
 
